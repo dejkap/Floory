@@ -48,7 +48,7 @@ header{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(
 #cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;cursor:grab;user-select:none;-webkit-user-select:none}
 #cv.panning{cursor:grabbing}
 #cv text{font-family:var(--ui)}
-.g1{stroke:rgba(var(--gc),var(--ga1))}.g2{stroke:rgba(var(--gc),var(--ga2))}.g3{stroke:rgba(var(--gc),var(--ga3))}
+.g0{stroke:rgba(var(--gc),calc(var(--ga1) * .55))}.g1{stroke:rgba(var(--gc),var(--ga1))}.g2{stroke:rgba(var(--gc),var(--ga2))}.g3{stroke:rgba(var(--gc),var(--ga3))}
 .gl{fill:none;stroke-width:1;vector-effect:non-scaling-stroke;shape-rendering:crispEdges}
 .rf{fill-opacity:var(--room-alpha)}
 .ro{fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linejoin:miter;vector-effect:non-scaling-stroke;pointer-events:none}
@@ -207,14 +207,14 @@ input[type=range]{width:100%;accent-color:var(--accent)}
       <span class="scale" id="scaleT">1 čtverec = 1 m</span>
       <button class="ib mob float-ib" id="undoM" aria-label="Zpět">↶</button>
       <button class="ib mob float-ib" id="redoM" aria-label="Znovu">↷</button>
-      <button class="ib" id="fitB" title="Zobrazit celý plán" aria-label="Zobrazit celý plán">⤢</button>
+      <button class="ib" id="fitB" title="Zobrazit celý plán, nebo přiblížit vybraný objekt" aria-label="Zobrazit celý plán nebo výběr">⤢</button>
     </div>
   </div>
   <div class="help" id="help" hidden><div class="help-in" role="dialog" aria-modal="true" aria-labelledby="helpT">
     <header><h2 id="helpT">Jak na Floory</h2><button class="btn sm" id="helpX">Zavřít</button></header>
     <p>Floory je skládačka půdorysu na čtvercové síti. Velký čtverec má 1 m, jemná síť 10 cm.</p>
     <h3>Pohyb po plánu</h3>
-    <ul><li>Posun: táhni prázdnou plochou (na mobilu jedním prstem).</li><li>Přiblížení: kolečko myši, nebo dva prsty.</li><li>Tlačítko ⤢ vpravo dole ukáže celý plán.</li></ul>
+    <ul><li>Posun: táhni prázdnou plochou (na mobilu jedním prstem).</li><li>Přiblížení: kolečko myši, nebo dva prsty.</li><li>Tlačítko ⤢ vpravo dole ukáže celý plán. Když je něco vybrané, přiblíží se na to (až na centimetry, hodí se na drobné zaoblení).</li><li>Při velkém přiblížení se krok posunu sám zjemní (na 5 cm a pak na 1 cm), aktuální krok vidíš vpravo dole.</li></ul>
     <h3>Místnosti</h3>
     <ul><li><b>+ Místnost</b> přidá obdélník 3 × 3 m doprostřed obrazovky.</li><li>Klepnutím místnost vybereš, tažením ji přesuneš. Nábytek uvnitř jede s ní.</li><li>Hrany se při tažení samy přichytí ke stěnám ostatních místností.</li><li><b>Slepit s jinou</b> spojí dvě místnosti do jednoho tvaru (třeba do L).</li><li>V panelu jde místnost otočit, přebarvit a nastavit krytí barvy.</li></ul>
     <h3>Tvar: rohy, strany, oblouky</h3>
@@ -488,7 +488,8 @@ const HS = COARSE ? 1.45 : 1;   // handle scale for touch
 let rotSide = 0;          // 0 top,1 right,2 bottom,3 left
 let hoverRot = false;
 let multi = false;         // multi-select corners mode (touch)
-const HSV = COARSE ? .95 : 1;  // visible handle size
+const HSV = COARSE ? .95 : 1;
+const MAXS = 40;           // max zoom: 40 px per cm  // visible handle size
 let gesture = null;
 let panelOpen = isWide();
 let history = [], future = [], lastCommitted = JSON.stringify(plan);
@@ -502,6 +503,7 @@ const KIND = {room: 'Místnost', furn: 'Nábytek'};
 function gridSVG(x0, y0, x1, y1, s) {
   let out = '';
   const lv = [];
+  if (s >= 7) lv.push([1, 'g0']);
   if (10 * s >= 5) lv.push([10, 'g1']);
   if (50 * s >= 5) lv.push([50, 'g2']);
   lv.push(100 * s >= 7 ? [100, 'g3'] : [500, 'g3']);
@@ -535,6 +537,51 @@ function edgeDims(ring, s, cls, selIdx = -1, flags = null) {
   }
   return out;
 }
+/* furniture label: find the roomiest point inside the shape, then fit (and wrap) the name there */
+function segDist(P, a, b) { const d = [b[0] - a[0], b[1] - a[1]], L2 = d[0] * d[0] + d[1] * d[1] || 1, t = Math.max(0, Math.min(1, ((P[0] - a[0]) * d[0] + (P[1] - a[1]) * d[1]) / L2)); return Math.hypot(a[0] + d[0] * t - P[0], a[1] + d[1] * t - P[1]); }
+function rayDist(P, u, rings) {
+  let best = Infinity;
+  for (const r of rings) for (let i = 0; i < r.length; i++) {
+    const a = r[i], b = r[(i + 1) % r.length], e = [b[0] - a[0], b[1] - a[1]], den = u[0] * e[1] - u[1] * e[0];
+    if (Math.abs(den) < 1e-9) continue;
+    const w = [a[0] - P[0], a[1] - P[1]], t = (w[0] * e[1] - w[1] * e[0]) / den, v = (w[0] * u[1] - w[1] * u[0]) / den;
+    if (t > 1e-6 && v >= 0 && v <= 1 && t < best) best = t;
+  }
+  return best;
+}
+function wrapLines(words, k) {
+  if (k === 1) return [words.join(' ')];
+  const total = words.join(' ').length, target = total / k, lines = []; let cur = '';
+  for (const w of words) { if (cur && (cur.length + 1 + w.length > target * 1.15) && lines.length < k - 1) { lines.push(cur); cur = w; } else cur = cur ? cur + ' ' + w : w; }
+  lines.push(cur); return lines;
+}
+function furnLabel(o, S, s) {
+  const rings = S.mp.flatMap(poly => poly), bb = S.bb;
+  let P = [o.x, o.y], pd = inMP(S.mp, o.x, o.y) ? Math.min(...rings.map(r => Math.min(...r.map((a, i) => segDist(P, a, r[(i + 1) % r.length]))))) : -1;
+  for (let i = 1; i < 12; i++) for (let j = 1; j < 12; j++) {
+    const q = [bb.x + bb.w * i / 12, bb.y + bb.h * j / 12];
+    if (!inMP(S.mp, q[0], q[1])) continue;
+    let d = Infinity; for (const r of rings) for (let k = 0; k < r.length; k++) { d = Math.min(d, segDist(q, r[k], r[(k + 1) % r.length])); if (d < pd) break; }
+    if (d > pd * 1.08) { pd = d; P = q; }
+  }
+  const words = o.name.trim().split(/\s+/).filter(Boolean); if (!words.length) return '';
+  let best = null;
+  for (const add of [0, 90]) {
+    const a = (o.rot + add) * Math.PI / 180, u = [Math.cos(a), Math.sin(a)], v = [-Math.sin(a), Math.cos(a)];
+    const W = 2 * Math.min(rayDist(P, u, rings), rayDist(P, [-u[0], -u[1]], rings)) * s - 6;
+    const H = 2 * Math.min(rayDist(P, v, rings), rayDist(P, [-v[0], -v[1]], rings)) * s - 4;
+    if (!(W > 0 && H > 0)) continue;
+    for (let k = 1; k <= Math.min(4, words.length); k++) {
+      const lines = wrapLines(words, k), longest = Math.max(...lines.map(l => l.length));
+      const fs = Math.min(13, W / (longest * .52), H / (k * 1.15));
+      if (!best || fs > best.fs * 1.05) best = {fs, lines, ang: readAngle(o.rot + add)};
+    }
+  }
+  if (!best || best.fs < 6.5) return '';
+  const lh = best.fs * 1.12 / s, x = r2(P[0]), y = r2(P[1]), n = best.lines.length;
+  return `<text class="lf" x="${x}" y="${y}" font-size="${best.fs / s}" transform="rotate(${r2(best.ang)} ${x} ${y})">` +
+    best.lines.map((l, i) => `<tspan x="${x}" dy="${i ? lh : -(n - 1) / 2 * lh}">${esc(l)}</tspan>`).join('') + '</text>';
+}
 const alphaSt = o => o.alpha != null ? ` style="fill-opacity:${o.alpha}"` : '';
 function sceneSVG(s, opt = {}) {
   const sh = new Map(); for (const o of plan.objs) sh.set(o.id, objShape(o));
@@ -547,13 +594,7 @@ function sceneSVG(s, opt = {}) {
   for (const o of furns) {
     const S = sh.get(o.id);
     out += `<path class="fu" fill-rule="evenodd" fill="${esc(o.color)}"${alphaSt(o)} d="${mpD(S.mp)}"/>`;
-    const lb = bboxPts(o.parts.flatMap(p => p.pts));
-    let ang = readAngle(o.rot), wPx = lb.w * s, hPx = lb.h * s;
-    const n = Math.max(1, o.name.length);
-    let fs = Math.min(13, (wPx - 6) / (n * .5), hPx * .7);
-    const fsV = Math.min(13, (hPx - 6) / (n * .5), wPx * .7);
-    if (fs < 8 && fsV > fs) { fs = fsV; ang = readAngle(o.rot + 90); }
-    if (fs >= 7 && o.name) out += `<text class="lf" x="${r2(o.x)}" y="${r2(o.y)}" font-size="${fs / s}" transform="rotate(${r2(ang)} ${r2(o.x)} ${r2(o.y)})">${esc(o.name)}</text>`;
+    if (o.name) out += furnLabel(o, S, s);
     if (!opt.exp) for (const p of o.parts) out += `<path class="hit" data-k="part" data-o="${o.id}" data-p="${p.id}" d="${ringD(partPoly(o, p))}"/>`;
   }
   // room labels in a free spot
@@ -671,7 +712,7 @@ function render() {
   const x0 = -view.tx / s, y0 = -view.ty / s, x1 = (W - view.tx) / s, y1 = (H - view.ty) / s;
   world.setAttribute('transform', `translate(${view.tx} ${view.ty}) scale(${s})`);
   world.innerHTML = (data.gridOff ? '' : gridSVG(x0, y0, x1, y1, s)) + sceneSVG(s) + boxSVG(s);
-  $('#scaleT').textContent = (100 * s >= 7 ? '1 čtverec = 1 m' : '1 čtverec = 5 m') + (10 * s >= 5 ? ' · jemná 10 cm' : '');
+  $('#scaleT').textContent = (100 * s >= 7 ? '1 čtverec = 1 m' : '1 čtverec = 5 m') + (s >= 7 ? ' · jemná 1 cm' : 10 * s >= 5 ? ' · jemná 10 cm' : '') + ' · krok ' + stepNow() + ' cm';
   $('#glueBanner').hidden = mode !== 'glue';
   if (mode === 'glue') $('#glueT').textContent = selObj()?.kind === 'furn' ? 'Klepni na nábytek, který chceš připojit' : 'Klepni na místnost, kterou chceš připojit';
   svg.classList.toggle('panning', gesture?.type === 'pan' && gesture.moved);
@@ -771,8 +812,10 @@ let downloads = null;
 (async () => { try { downloads = await window.claude?.use?.('downloads'); } catch (e) {} if (!sel) renderPanel(); })();
 
 /* ---------- snapping ---------- */
-const snapV = v => Math.round(v / data.snap) * data.snap;
-const snapD = v => Math.round(v / data.snap) * data.snap;
+/* zooming in makes the step finer automatically: precise work needs no settings change */
+const stepNow = () => view.s >= 8 ? Math.min(data.snap, 1) : view.s >= 3 ? Math.min(data.snap, 5) : data.snap;
+const snapV = v => Math.round(v / stepNow()) * stepNow();
+const snapD = v => Math.round(v / stepNow()) * stepNow();
 function vertsOf(objs, skip) {
   const xs = [], ys = [];
   for (const o of objs) for (const p of o.parts) p.pts.forEach((q, i) => { if (skip && skip(o, p, i)) return; const w = toW(o, q); xs.push(w[0]); ys.push(w[1]); });
@@ -1282,7 +1325,7 @@ svg.addEventListener('pointermove', e => {
   if (g.type === 'pinch') {
     if (ptrs.size < 2) return;
     const [a, b] = [...ptrs.values()], r = svg.getBoundingClientRect();
-    view.s = Math.max(.08, Math.min(8, g.s0 * Math.hypot(a.x - b.x, a.y - b.y) / g.d0));
+    view.s = Math.max(.08, Math.min(MAXS, g.s0 * Math.hypot(a.x - b.x, a.y - b.y) / g.d0));
     view.tx = (a.x + b.x) / 2 - r.left - g.wp[0] * view.s; view.ty = (a.y + b.y) / 2 - r.top - g.wp[1] * view.s;
     render(); return;
   }
@@ -1361,7 +1404,7 @@ svg.addEventListener('wheel', e => {
   e.preventDefault();
   const r = svg.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
   const wp = [(mx - view.tx) / view.s, (my - view.ty) / view.s];
-  view.s = Math.max(.08, Math.min(8, view.s * Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0015))));
+  view.s = Math.max(.08, Math.min(MAXS, view.s * Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0015))));
   view.tx = mx - wp[0] * view.s; view.ty = my - wp[1] * view.s; render();
 }, {passive: false});
 
@@ -1377,7 +1420,7 @@ document.addEventListener('keydown', e => {
   const d = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]}[e.key];
   if (d) {
     e.preventDefault();
-    const st = e.shiftKey ? 1 : data.snap, dW = [d[0] * st, d[1] * st], p = selPart();
+    const st = e.shiftKey ? 1 : stepNow(), dW = [d[0] * st, d[1] * st], p = selPart();
     if (sel.v != null) { const w = toW(o, p.pts[sel.v]); const l = toL(o, [w[0] + dW[0], w[1] + dW[1]]); p.pts[sel.v] = fp(p.pts[sel.v], r2(l[0]), r2(l[1])); normalize(o); }
     else {
       const carry = o.kind === 'room' ? furnIn(o, roomShapes()) : [];
@@ -1389,7 +1432,12 @@ document.addEventListener('keydown', e => {
 
 $('#addRoomB').onclick = addRoom;
 $('#addFurnB').onclick = addFurn;
-$('#fitB').onclick = fit;
+$('#fitB').onclick = () => {
+  const o = selObj(); if (!o) { fit(); return; }
+  const W = svg.clientWidth, H = svg.clientHeight, bb = objShape(o).bb, m = W < 600 ? 40 : 70, bot = W < 600 ? 64 : 48;
+  const sc = Math.max(.08, Math.min(MAXS, (W - 2 * m) / Math.max(bb.w, 1), (H - m - bot) / Math.max(bb.h, 1)));
+  animateView({s: sc, tx: W / 2 - (bb.x + bb.w / 2) * sc, ty: (H - bot + m) / 2 - (bb.y + bb.h / 2) * sc});
+};
 $('#undoB').onclick = $('#undoM').onclick = undo;
 $('#redoB').onclick = $('#redoM').onclick = redo;
 $('#glueCancel').onclick = () => { mode = null; render(); renderPanel(); };
