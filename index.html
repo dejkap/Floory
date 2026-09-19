@@ -1,0 +1,1119 @@
+<!doctype html><html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#2450C8">
+<title>Floory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400&display=swap">
+<style>
+:root{
+  --bg:#EEF1EE; --paper:#FAFBF9; --panel:#FFFFFF; --ink:#1F2A30; --ink2:#5B666C; --line:#D5DAD6;
+  --g1:rgba(214,112,52,.12); --g2:rgba(214,112,52,.22); --g3:rgba(214,112,52,.45);
+  --accent:#2450C8; --accent-weak:rgba(36,80,200,.10); --accent-ink:#FFFFFF;
+  --danger:#B3261E; --room-alpha:.55; --furn-alpha:.94; --furn-ink:#1F2A30; --shadow:0 6px 20px rgba(31,42,48,.14);
+  --ui:"Carlito","Calibri","Segoe UI",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101417; --paper:#151A1E; --panel:#1B2126; --ink:#E4EAED; --ink2:#98A3A9; --line:#2B343A;
+    --g1:rgba(236,140,80,.08); --g2:rgba(236,140,80,.14); --g3:rgba(236,140,80,.30);
+    --accent:#86A6FF; --accent-weak:rgba(134,166,255,.14); --accent-ink:#0E1420;
+    --danger:#FF8A80; --room-alpha:.36; --furn-alpha:.82; --shadow:0 6px 20px rgba(0,0,0,.4);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101417; --paper:#151A1E; --panel:#1B2126; --ink:#E4EAED; --ink2:#98A3A9; --line:#2B343A;
+  --g1:rgba(236,140,80,.08); --g2:rgba(236,140,80,.14); --g3:rgba(236,140,80,.30);
+  --accent:#86A6FF; --accent-weak:rgba(134,166,255,.14); --accent-ink:#0E1420;
+  --danger:#FF8A80; --room-alpha:.36; --furn-alpha:.82; --shadow:0 6px 20px rgba(0,0,0,.4);
+}
+html{height:100%;box-sizing:border-box}
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:16px;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+button,.btn,.ib,.sw,.li{touch-action:manipulation}
+.app{height:100%;display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:100%}
+header{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);min-width:0}
+.brand{font-weight:700;font-size:24px;letter-spacing:-.2px;white-space:nowrap;line-height:1}
+.brand span{color:var(--accent)}
+#planSel{min-width:0;flex:1 1 auto;max-width:260px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.sp{flex:1}
+.ib{display:inline-grid;place-items:center;width:36px;height:36px;border:1px solid var(--line);border-radius:8px;background:var(--paper);cursor:pointer;font-size:17px;flex:none}
+.ib:disabled{opacity:.35;cursor:default}
+.ib:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,.sw:focus-visible,.li:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{font-size:13px;color:var(--ink2);white-space:nowrap;display:flex;align-items:center;gap:5px}
+.status i{width:7px;height:7px;border-radius:50%;background:var(--ink2);display:inline-block}
+.status[data-s="saved"] i{background:#3F9D5C}.status[data-s="saving"] i{background:#D9912B}.status[data-s="error"] i{background:var(--danger)}
+
+.stage{position:relative;min-height:0;background:var(--paper);overflow:hidden}
+#cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;cursor:grab;user-select:none;-webkit-user-select:none}
+#cv.panning{cursor:grabbing}
+#cv text{font-family:var(--ui)}
+.g1{stroke:var(--g1)}.g2{stroke:var(--g2)}.g3{stroke:var(--g3)}
+.gl{fill:none;stroke-width:1;vector-effect:non-scaling-stroke;shape-rendering:crispEdges}
+.rf{fill-opacity:var(--room-alpha)}
+.ro{fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linejoin:miter;vector-effect:non-scaling-stroke;pointer-events:none}
+.hit{fill:transparent;cursor:pointer}
+.fu{fill-opacity:var(--furn-alpha);stroke:var(--ink);stroke-width:1.2;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
+.lb{font-weight:700;fill:var(--ink);pointer-events:none;text-anchor:middle}
+.la{fill:var(--ink2);pointer-events:none;text-anchor:middle;font-variant-numeric:tabular-nums}
+.lf{fill:var(--furn-ink);pointer-events:none;text-anchor:middle;dominant-baseline:central}
+.selp{fill:none;stroke:var(--accent);stroke-width:1.5;stroke-dasharray:6 4;vector-effect:non-scaling-stroke;pointer-events:none}
+.selg{fill:none;stroke:var(--accent);stroke-width:5;stroke-opacity:.3;stroke-linejoin:round;vector-effect:non-scaling-stroke;pointer-events:none}
+.sele{stroke:var(--accent);stroke-width:5;stroke-linecap:round;vector-effect:non-scaling-stroke;pointer-events:none}
+.dim{font-weight:700;fill:var(--accent);text-anchor:middle;dominant-baseline:central;pointer-events:none;font-variant-numeric:tabular-nums;paint-order:stroke;stroke:var(--paper);stroke-width:3.5px;stroke-linejoin:round}
+.dim.on{fill:var(--accent-ink);stroke:var(--accent);stroke-width:7px}
+.dima{font-weight:400;fill:var(--ink2);text-anchor:middle;dominant-baseline:central;pointer-events:none;font-variant-numeric:tabular-nums;paint-order:stroke;stroke:var(--paper);stroke-width:3px;stroke-linejoin:round}
+.vl{font-weight:700;fill:var(--ink2);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.hv{fill:var(--accent);stroke:var(--paper);stroke-width:2;vector-effect:non-scaling-stroke;pointer-events:none}
+.hv.on{fill:var(--paper);stroke:var(--accent);stroke-width:3.5}
+.he{fill:var(--paper);stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke;pointer-events:none}
+.he.on{fill:var(--accent)}
+.hr{fill:var(--paper);stroke:var(--accent);stroke-width:2;vector-effect:non-scaling-stroke;pointer-events:none}
+.hrg{opacity:.5;transition:opacity .15s}.hrg.hot{opacity:1}
+.hri{fill:var(--accent);text-anchor:middle;dominant-baseline:central;pointer-events:none;font-weight:700}
+.hh{fill:transparent;cursor:move}
+.hh[data-k="rot"]{cursor:grab}
+.glue-t{stroke:var(--accent);stroke-width:2;stroke-dasharray:3 3;fill:var(--accent-weak);vector-effect:non-scaling-stroke;pointer-events:none}
+
+.fab{position:absolute;left:16px;bottom:14px;display:flex;gap:8px;flex-wrap:wrap}
+.fab-r{position:absolute;right:16px;bottom:14px;display:flex;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-weight:700;font-size:15px;white-space:nowrap}
+.btn.pri{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.float{box-shadow:var(--shadow)}
+.btn.danger{color:var(--danger)}
+.btn.sm{padding:6px 10px;font-size:14px}
+.scale{font-size:13px;color:var(--ink2);background:var(--panel);border:1px solid var(--line);padding:4px 8px;border-radius:7px;font-variant-numeric:tabular-nums}
+.banner{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:var(--accent);color:var(--accent-ink);padding:8px 10px 8px 14px;border-radius:10px;display:flex;gap:10px;align-items:center;box-shadow:var(--shadow);font-weight:700;font-size:15px;max-width:calc(100% - 32px)}
+.banner button{background:transparent;border:1px solid currentColor;color:inherit;border-radius:7px;padding:4px 9px;cursor:pointer;font-weight:700}
+
+aside{background:var(--panel);border-top:1px solid var(--line);display:flex;flex-direction:column;min-height:0;max-height:44vh;padding-bottom:env(safe-area-inset-bottom,0px)}
+.ph{display:flex;align-items:center;gap:8px;padding:10px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+.ph h2{margin:0;font-size:17px;font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ph .chev{transition:transform .15s}
+.ph .x{border:1px solid var(--line);background:var(--paper);border-radius:8px;padding:4px 10px;cursor:pointer;font-weight:700;font-size:14px}
+aside.closed .pb{display:none}
+aside.closed .chev{transform:rotate(180deg)}
+.pb{overflow:auto;padding:14px 16px 18px;display:flex;flex-direction:column;gap:20px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.eb{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink2);font-weight:700}
+.tin{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font-size:19px;font-weight:700}
+.flds{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fld{display:flex;flex-direction:column;gap:3px;font-size:13px;color:var(--ink2)}
+.row{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;background:var(--paper);overflow:hidden}
+.row input{border:0;background:transparent;padding:7px 8px;width:100%;min-width:0;font-size:16px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.row em{font-style:normal;padding-right:8px;color:var(--ink2)}
+.fld small{font-variant-numeric:tabular-nums}
+.sws{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.sw{width:28px;height:28px;border-radius:7px;border:1px solid rgba(0,0,0,.18);cursor:pointer;padding:0}
+.sw.on{outline:2px solid var(--ink);outline-offset:2px}
+.sws input[type=color]{width:34px;height:30px;border:1px solid var(--line);border-radius:7px;background:var(--paper);padding:2px;cursor:pointer}
+.br{display:flex;gap:8px;flex-wrap:wrap}
+.stat{font-size:15px;color:var(--ink2)} .stat b{color:var(--ink);font-variant-numeric:tabular-nums}
+.chk{display:flex;gap:8px;align-items:center;font-size:15px;cursor:pointer}
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.li{display:flex;align-items:center;gap:10px;padding:8px 10px;background:transparent;border:0;border-bottom:1px solid var(--line);text-align:left;cursor:pointer;width:100%}
+.li:last-child{border-bottom:0}
+.li:hover{background:var(--accent-weak)}
+.li .dot{width:14px;height:14px;border-radius:4px;flex:none;border:1px solid rgba(0,0,0,.18)}
+.li .nm{flex:1;min-width:0;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li.fi{padding-left:30px;background:var(--bg)}
+.li.fi .nm{font-size:15px}
+.li.fi:hover{background:var(--accent-weak)}
+.li.grp{cursor:default;background:var(--bg);font-weight:700;font-size:13px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em}
+.grip{touch-action:none;cursor:grab;color:var(--ink2);font-size:18px;line-height:1;padding:4px 6px;margin:-4px 0 -4px -6px;border-radius:6px}
+.grip:hover{background:var(--accent-weak);color:var(--accent)}
+.li.fi .grip{margin-left:-24px}
+.li.drop{background:var(--accent-weak);box-shadow:inset 3px 0 0 var(--accent)}
+.ghost{position:fixed;left:0;top:0;z-index:50;pointer-events:none;background:var(--accent);color:var(--accent-ink);padding:6px 12px;border-radius:8px;font-weight:700;box-shadow:var(--shadow);white-space:nowrap}
+.li .ar{font-variant-numeric:tabular-nums;color:var(--ink2);font-size:14px}
+.note{font-size:14px;color:var(--ink2);line-height:1.4}
+.sample{background:var(--accent-weak);border:1px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:15px;line-height:1.4;display:flex;flex-direction:column;gap:8px}
+select.sel{padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.total{display:flex;justify-content:space-between;padding:8px 10px;font-weight:700;font-variant-numeric:tabular-nums;background:var(--bg)}
+.sides{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}
+.side{display:flex;align-items:center;gap:6px}
+.side b{font-size:14px;min-width:34px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.side.on b{color:var(--accent)}
+.side.on .row{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.side .row{flex:1}
+.rotrow{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.rotrow .row{width:96px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.sub{border-top:1px solid var(--line);padding-top:12px}
+
+@media (min-width:860px){
+  .app{grid-template-columns:1fr 360px;grid-template-rows:auto 1fr}
+  header{grid-column:1 / -1}
+  aside{grid-column:2;grid-row:2;border-top:0;border-left:1px solid var(--line);max-height:none}
+  .ph{cursor:default} .ph .chev{display:none}
+  aside.closed .pb{display:flex}
+}
+@media (max-width:520px){ .status b{display:none} .brand{font-size:21px} .scale{display:none} }
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+</head><body>
+
+<div class="app">
+  <header>
+    <div class="brand">Fl<span>oo</span>ry</div>
+    <select id="planSel" aria-label="Plán"></select>
+    <div class="sp"></div>
+    <div class="status" id="status" data-s="local"><i></i><b id="statusT">Jen v tomto prohlížeči</b></div>
+    <button class="ib" id="undoB" title="Zpět (Ctrl+Z)" aria-label="Zpět">↶</button>
+    <button class="ib" id="redoB" title="Znovu (Ctrl+Y)" aria-label="Znovu">↷</button>
+  </header>
+  <div class="stage" id="stage">
+    <svg id="cv" xmlns="http://www.w3.org/2000/svg"><g id="world"></g></svg>
+    <div class="banner" id="glueBanner" hidden><span id="glueT">Klepni na místnost, kterou chceš připojit</span> <button id="glueCancel">Zrušit</button></div>
+    <div class="fab">
+      <button class="btn pri float" id="addRoomB">+ Místnost</button>
+      <button class="btn float" id="addFurnB">+ Nábytek</button>
+    </div>
+    <div class="fab-r">
+      <span class="scale" id="scaleT">1 čtverec = 1 m</span>
+      <button class="ib" id="fitB" title="Zobrazit celý plán" aria-label="Zobrazit celý plán">⤢</button>
+    </div>
+  </div>
+  <aside id="panel">
+    <div class="ph" id="ph"><h2 id="phT">Plán</h2><button class="x" id="desel" hidden>Hotovo</button><span class="chev">▾</span></div>
+    <div class="pb" id="pb"></div>
+  </aside>
+</div>
+
+<script>/* polygon-clipping 0.15.7, MIT License, Mike Fogel */
+!function(t,e){"object"==typeof exports&&"undefined"!=typeof module?module.exports=e():"function"==typeof define&&define.amd?define(e):(t="undefined"!=typeof globalThis?globalThis:t||self).polygonClipping=e()}(this,(function(){"use strict";
+/**
+     * splaytree v3.1.2
+     * Fast Splay tree for Node and browser
+     *
+     * @author Alexander Milevski <info@w8r.name>
+     * @license MIT
+     * @preserve
+     */
+/*! *****************************************************************************
+    Copyright (c) Microsoft Corporation. All rights reserved.
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+    this file except in compliance with the License. You may obtain a copy of the
+    License at http://www.apache.org/licenses/LICENSE-2.0
+
+    THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+    WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+    MERCHANTABLITY OR NON-INFRINGEMENT.
+
+    See the Apache Version 2.0 License for specific language governing permissions
+    and limitations under the License.
+    ***************************************************************************** */function t(t,e){var n,r,i,o,s={label:0,sent:function(){if(1&i[0])throw i[1];return i[1]},trys:[],ops:[]};return o={next:l(0),throw:l(1),return:l(2)},"function"==typeof Symbol&&(o[Symbol.iterator]=function(){return this}),o;function l(o){return function(l){return function(o){if(n)throw new TypeError("Generator is already executing.");for(;s;)try{if(n=1,r&&(i=2&o[0]?r.return:o[0]?r.throw||((i=r.return)&&i.call(r),0):r.next)&&!(i=i.call(r,o[1])).done)return i;switch(r=0,i&&(o=[2&o[0],i.value]),o[0]){case 0:case 1:i=o;break;case 4:return s.label++,{value:o[1],done:!1};case 5:s.label++,r=o[1],o=[0];continue;case 7:o=s.ops.pop(),s.trys.pop();continue;default:if(!(i=s.trys,(i=i.length>0&&i[i.length-1])||6!==o[0]&&2!==o[0])){s=0;continue}if(3===o[0]&&(!i||o[1]>i[0]&&o[1]<i[3])){s.label=o[1];break}if(6===o[0]&&s.label<i[1]){s.label=i[1],i=o;break}if(i&&s.label<i[2]){s.label=i[2],s.ops.push(o);break}i[2]&&s.ops.pop(),s.trys.pop();continue}o=e.call(t,s)}catch(t){o=[6,t],r=0}finally{n=i=0}if(5&o[0])throw o[1];return{value:o[0]?o[1]:void 0,done:!0}}([o,l])}}}var e=function(t,e){this.next=null,this.key=t,this.data=e,this.left=null,this.right=null};function n(t,e){return t>e?1:t<e?-1:0}function r(t,n,r){for(var i=new e(null,null),o=i,s=i;;){var l=r(t,n.key);if(l<0){if(null===n.left)break;if(r(t,n.left.key)<0){var h=n.left;if(n.left=h.right,h.right=n,null===(n=h).left)break}s.left=n,s=n,n=n.left}else{if(!(l>0))break;if(null===n.right)break;if(r(t,n.right.key)>0){h=n.right;if(n.right=h.left,h.left=n,null===(n=h).right)break}o.right=n,o=n,n=n.right}}return o.right=n.left,s.left=n.right,n.left=i.right,n.right=i.left,n}function i(t,n,i,o){var s=new e(t,n);if(null===i)return s.left=s.right=null,s;var l=o(t,(i=r(t,i,o)).key);return l<0?(s.left=i.left,s.right=i,i.left=null):l>=0&&(s.right=i.right,s.left=i,i.right=null),s}function o(t,e,n){var i=null,o=null;if(e){var s=n((e=r(t,e,n)).key,t);0===s?(i=e.left,o=e.right):s<0?(o=e.right,e.right=null,i=e):(i=e.left,e.left=null,o=e)}return{left:i,right:o}}function s(t,e,n,r,i){if(t){r(e+(n?"└── ":"├── ")+i(t)+"\n");var o=e+(n?"    ":"│   ");t.left&&s(t.left,o,!1,r,i),t.right&&s(t.right,o,!0,r,i)}}var l=function(){function l(t){void 0===t&&(t=n),this._root=null,this._size=0,this._comparator=t}return l.prototype.insert=function(t,e){return this._size++,this._root=i(t,e,this._root,this._comparator)},l.prototype.add=function(t,n){var i=new e(t,n);null===this._root&&(i.left=i.right=null,this._size++,this._root=i);var o=this._comparator,s=r(t,this._root,o),l=o(t,s.key);return 0===l?this._root=s:(l<0?(i.left=s.left,i.right=s,s.left=null):l>0&&(i.right=s.right,i.left=s,s.right=null),this._size++,this._root=i),this._root},l.prototype.remove=function(t){this._root=this._remove(t,this._root,this._comparator)},l.prototype._remove=function(t,e,n){var i;return null===e?null:0===n(t,(e=r(t,e,n)).key)?(null===e.left?i=e.right:(i=r(t,e.left,n)).right=e.right,this._size--,i):e},l.prototype.pop=function(){var t=this._root;if(t){for(;t.left;)t=t.left;return this._root=r(t.key,this._root,this._comparator),this._root=this._remove(t.key,this._root,this._comparator),{key:t.key,data:t.data}}return null},l.prototype.findStatic=function(t){for(var e=this._root,n=this._comparator;e;){var r=n(t,e.key);if(0===r)return e;e=r<0?e.left:e.right}return null},l.prototype.find=function(t){return this._root&&(this._root=r(t,this._root,this._comparator),0!==this._comparator(t,this._root.key))?null:this._root},l.prototype.contains=function(t){for(var e=this._root,n=this._comparator;e;){var r=n(t,e.key);if(0===r)return!0;e=r<0?e.left:e.right}return!1},l.prototype.forEach=function(t,e){for(var n=this._root,r=[],i=!1;!i;)null!==n?(r.push(n),n=n.left):0!==r.length?(n=r.pop(),t.call(e,n),n=n.right):i=!0;return this},l.prototype.range=function(t,e,n,r){for(var i=[],o=this._comparator,s=this._root;0!==i.length||s;)if(s)i.push(s),s=s.left;else{if(o((s=i.pop()).key,e)>0)break;if(o(s.key,t)>=0&&n.call(r,s))return this;s=s.right}return this},l.prototype.keys=function(){var t=[];return this.forEach((function(e){var n=e.key;return t.push(n)})),t},l.prototype.values=function(){var t=[];return this.forEach((function(e){var n=e.data;return t.push(n)})),t},l.prototype.min=function(){return this._root?this.minNode(this._root).key:null},l.prototype.max=function(){return this._root?this.maxNode(this._root).key:null},l.prototype.minNode=function(t){if(void 0===t&&(t=this._root),t)for(;t.left;)t=t.left;return t},l.prototype.maxNode=function(t){if(void 0===t&&(t=this._root),t)for(;t.right;)t=t.right;return t},l.prototype.at=function(t){for(var e=this._root,n=!1,r=0,i=[];!n;)if(e)i.push(e),e=e.left;else if(i.length>0){if(e=i.pop(),r===t)return e;r++,e=e.right}else n=!0;return null},l.prototype.next=function(t){var e=this._root,n=null;if(t.right){for(n=t.right;n.left;)n=n.left;return n}for(var r=this._comparator;e;){var i=r(t.key,e.key);if(0===i)break;i<0?(n=e,e=e.left):e=e.right}return n},l.prototype.prev=function(t){var e=this._root,n=null;if(null!==t.left){for(n=t.left;n.right;)n=n.right;return n}for(var r=this._comparator;e;){var i=r(t.key,e.key);if(0===i)break;i<0?e=e.left:(n=e,e=e.right)}return n},l.prototype.clear=function(){return this._root=null,this._size=0,this},l.prototype.toList=function(){return function(t){var n=t,r=[],i=!1,o=new e(null,null),s=o;for(;!i;)n?(r.push(n),n=n.left):r.length>0?n=(n=s=s.next=r.pop()).right:i=!0;return s.next=null,o.next}(this._root)},l.prototype.load=function(t,n,r){void 0===n&&(n=[]),void 0===r&&(r=!1);var i=t.length,o=this._comparator;if(r&&f(t,n,0,i-1,o),null===this._root)this._root=h(t,n,0,i),this._size=i;else{var s=function(t,n,r){var i=new e(null,null),o=i,s=t,l=n;for(;null!==s&&null!==l;)r(s.key,l.key)<0?(o.next=s,s=s.next):(o.next=l,l=l.next),o=o.next;null!==s?o.next=s:null!==l&&(o.next=l);return i.next}(this.toList(),function(t,n){for(var r=new e(null,null),i=r,o=0;o<t.length;o++)i=i.next=new e(t[o],n[o]);return i.next=null,r.next}(t,n),o);i=this._size+i,this._root=u({head:s},0,i)}return this},l.prototype.isEmpty=function(){return null===this._root},Object.defineProperty(l.prototype,"size",{get:function(){return this._size},enumerable:!0,configurable:!0}),Object.defineProperty(l.prototype,"root",{get:function(){return this._root},enumerable:!0,configurable:!0}),l.prototype.toString=function(t){void 0===t&&(t=function(t){return String(t.key)});var e=[];return s(this._root,"",!0,(function(t){return e.push(t)}),t),e.join("")},l.prototype.update=function(t,e,n){var s=this._comparator,l=o(t,this._root,s),h=l.left,u=l.right;s(t,e)<0?u=i(e,n,u,s):h=i(e,n,h,s),this._root=function(t,e,n){return null===e?t:(null===t||((e=r(t.key,e,n)).left=t),e)}(h,u,s)},l.prototype.split=function(t){return o(t,this._root,this._comparator)},l.prototype[Symbol.iterator]=function(){var e,n,r;return t(this,(function(t){switch(t.label){case 0:e=this._root,n=[],r=!1,t.label=1;case 1:return r?[3,6]:null===e?[3,2]:(n.push(e),e=e.left,[3,5]);case 2:return 0===n.length?[3,4]:[4,e=n.pop()];case 3:return t.sent(),e=e.right,[3,5];case 4:r=!0,t.label=5;case 5:return[3,1];case 6:return[2]}}))},l}();function h(t,n,r,i){var o=i-r;if(o>0){var s=r+Math.floor(o/2),l=t[s],u=n[s],f=new e(l,u);return f.left=h(t,n,r,s),f.right=h(t,n,s+1,i),f}return null}function u(t,e,n){var r=n-e;if(r>0){var i=e+Math.floor(r/2),o=u(t,e,i),s=t.head;return s.left=o,t.head=t.head.next,s.right=u(t,i+1,n),s}return null}function f(t,e,n,r,i){if(!(n>=r)){for(var o=t[n+r>>1],s=n-1,l=r+1;;){do{s++}while(i(t[s],o)<0);do{l--}while(i(t[l],o)>0);if(s>=l)break;var h=t[s];t[s]=t[l],t[l]=h,h=e[s],e[s]=e[l],e[l]=h}f(t,e,n,l,i),f(t,e,l+1,r,i)}}const c=(t,e)=>t.ll.x<=e.x&&e.x<=t.ur.x&&t.ll.y<=e.y&&e.y<=t.ur.y,p=(t,e)=>{if(e.ur.x<t.ll.x||t.ur.x<e.ll.x||e.ur.y<t.ll.y||t.ur.y<e.ll.y)return null;const n=t.ll.x<e.ll.x?e.ll.x:t.ll.x,r=t.ur.x<e.ur.x?t.ur.x:e.ur.x;return{ll:{x:n,y:t.ll.y<e.ll.y?e.ll.y:t.ll.y},ur:{x:r,y:t.ur.y<e.ur.y?t.ur.y:e.ur.y}}};let g=Number.EPSILON;void 0===g&&(g=Math.pow(2,-52));const a=g*g,y=(t,e)=>{if(-g<t&&t<g&&-g<e&&e<g)return 0;const n=t-e;return n*n<a*t*e?0:t<e?-1:1};class x{constructor(){this.tree=new l,this.round(0)}round(t){const e=this.tree.add(t),n=this.tree.prev(e);if(null!==n&&0===y(e.key,n.key))return this.tree.remove(t),n.key;const r=this.tree.next(e);return null!==r&&0===y(e.key,r.key)?(this.tree.remove(t),r.key):t}}const b=new class{constructor(){this.reset()}reset(){this.xRounder=new x,this.yRounder=new x}round(t,e){return{x:this.xRounder.round(t),y:this.yRounder.round(e)}}},v=11102230246251565e-32,d=134217729,m=(3+8*v)*v;function E(t,e,n,r,i){let o,s,l,h,u=e[0],f=r[0],c=0,p=0;f>u==f>-u?(o=u,u=e[++c]):(o=f,f=r[++p]);let g=0;if(c<t&&p<n)for(f>u==f>-u?(s=u+o,l=o-(s-u),u=e[++c]):(s=f+o,l=o-(s-f),f=r[++p]),o=s,0!==l&&(i[g++]=l);c<t&&p<n;)f>u==f>-u?(s=o+u,h=s-o,l=o-(s-h)+(u-h),u=e[++c]):(s=o+f,h=s-o,l=o-(s-h)+(f-h),f=r[++p]),o=s,0!==l&&(i[g++]=l);for(;c<t;)s=o+u,h=s-o,l=o-(s-h)+(u-h),u=e[++c],o=s,0!==l&&(i[g++]=l);for(;p<n;)s=o+f,h=s-o,l=o-(s-h)+(f-h),f=r[++p],o=s,0!==l&&(i[g++]=l);return 0===o&&0!==g||(i[g++]=o),g}function S(t){return new Float64Array(t)}const _=22204460492503146e-32,w=11093356479670487e-47,k=S(4),R=S(8),I=S(12),P=S(16),N=S(4);function A(t,e,n,r,i,o){const s=(e-o)*(n-i),l=(t-i)*(r-o),h=s-l,u=Math.abs(s+l);return Math.abs(h)>=33306690738754716e-32*u?h:-function(t,e,n,r,i,o,s){let l,h,u,f,c,p,g,a,y,x,b,v,S,A,O,L,$,M;const z=t-i,B=n-i,G=e-o,T=r-o;A=z*T,p=d*z,g=p-(p-z),a=z-g,p=d*T,y=p-(p-T),x=T-y,O=a*x-(A-g*y-a*y-g*x),L=G*B,p=d*G,g=p-(p-G),a=G-g,p=d*B,y=p-(p-B),x=B-y,$=a*x-(L-g*y-a*y-g*x),b=O-$,c=O-b,k[0]=O-(b+c)+(c-$),v=A+b,c=v-A,S=A-(v-c)+(b-c),b=S-L,c=S-b,k[1]=S-(b+c)+(c-L),M=v+b,c=M-v,k[2]=v-(M-c)+(b-c),k[3]=M;let q=function(t,e){let n=e[0];for(let r=1;r<t;r++)n+=e[r];return n}(4,k),C=_*s;if(q>=C||-q>=C)return q;if(c=t-z,l=t-(z+c)+(c-i),c=n-B,u=n-(B+c)+(c-i),c=e-G,h=e-(G+c)+(c-o),c=r-T,f=r-(T+c)+(c-o),0===l&&0===h&&0===u&&0===f)return q;if(C=w*s+m*Math.abs(q),q+=z*f+T*l-(G*u+B*h),q>=C||-q>=C)return q;A=l*T,p=d*l,g=p-(p-l),a=l-g,p=d*T,y=p-(p-T),x=T-y,O=a*x-(A-g*y-a*y-g*x),L=h*B,p=d*h,g=p-(p-h),a=h-g,p=d*B,y=p-(p-B),x=B-y,$=a*x-(L-g*y-a*y-g*x),b=O-$,c=O-b,N[0]=O-(b+c)+(c-$),v=A+b,c=v-A,S=A-(v-c)+(b-c),b=S-L,c=S-b,N[1]=S-(b+c)+(c-L),M=v+b,c=M-v,N[2]=v-(M-c)+(b-c),N[3]=M;const F=E(4,k,4,N,R);A=z*f,p=d*z,g=p-(p-z),a=z-g,p=d*f,y=p-(p-f),x=f-y,O=a*x-(A-g*y-a*y-g*x),L=G*u,p=d*G,g=p-(p-G),a=G-g,p=d*u,y=p-(p-u),x=u-y,$=a*x-(L-g*y-a*y-g*x),b=O-$,c=O-b,N[0]=O-(b+c)+(c-$),v=A+b,c=v-A,S=A-(v-c)+(b-c),b=S-L,c=S-b,N[1]=S-(b+c)+(c-L),M=v+b,c=M-v,N[2]=v-(M-c)+(b-c),N[3]=M;const j=E(F,R,4,N,I);A=l*f,p=d*l,g=p-(p-l),a=l-g,p=d*f,y=p-(p-f),x=f-y,O=a*x-(A-g*y-a*y-g*x),L=h*u,p=d*h,g=p-(p-h),a=h-g,p=d*u,y=p-(p-u),x=u-y,$=a*x-(L-g*y-a*y-g*x),b=O-$,c=O-b,N[0]=O-(b+c)+(c-$),v=A+b,c=v-A,S=A-(v-c)+(b-c),b=S-L,c=S-b,N[1]=S-(b+c)+(c-L),M=v+b,c=M-v,N[2]=v-(M-c)+(b-c),N[3]=M;const U=E(j,I,4,N,P);return P[U-1]}(t,e,n,r,i,o,u)}const O=(t,e)=>t.x*e.y-t.y*e.x,L=(t,e)=>t.x*e.x+t.y*e.y,$=(t,e,n)=>{const r=A(t.x,t.y,e.x,e.y,n.x,n.y);return r>0?-1:r<0?1:0},M=t=>Math.sqrt(L(t,t)),z=(t,e,n)=>{const r={x:e.x-t.x,y:e.y-t.y},i={x:n.x-t.x,y:n.y-t.y};return O(i,r)/M(i)/M(r)},B=(t,e,n)=>{const r={x:e.x-t.x,y:e.y-t.y},i={x:n.x-t.x,y:n.y-t.y};return L(i,r)/M(i)/M(r)},G=(t,e,n)=>0===e.y?null:{x:t.x+e.x/e.y*(n-t.y),y:n},T=(t,e,n)=>0===e.x?null:{x:n,y:t.y+e.y/e.x*(n-t.x)};class q{static compare(t,e){const n=q.comparePoints(t.point,e.point);return 0!==n?n:(t.point!==e.point&&t.link(e),t.isLeft!==e.isLeft?t.isLeft?1:-1:F.compare(t.segment,e.segment))}static comparePoints(t,e){return t.x<e.x?-1:t.x>e.x?1:t.y<e.y?-1:t.y>e.y?1:0}constructor(t,e){void 0===t.events?t.events=[this]:t.events.push(this),this.point=t,this.isLeft=e}link(t){if(t.point===this.point)throw new Error("Tried to link already linked events");const e=t.point.events;for(let t=0,n=e.length;t<n;t++){const n=e[t];this.point.events.push(n),n.point=this.point}this.checkForConsuming()}checkForConsuming(){const t=this.point.events.length;for(let e=0;e<t;e++){const n=this.point.events[e];if(void 0===n.segment.consumedBy)for(let r=e+1;r<t;r++){const t=this.point.events[r];void 0===t.consumedBy&&(n.otherSE.point.events===t.otherSE.point.events&&n.segment.consume(t.segment))}}}getAvailableLinkedEvents(){const t=[];for(let e=0,n=this.point.events.length;e<n;e++){const n=this.point.events[e];n!==this&&!n.segment.ringOut&&n.segment.isInResult()&&t.push(n)}return t}getLeftmostComparator(t){const e=new Map,n=n=>{const r=n.otherSE;e.set(n,{sine:z(this.point,t.point,r.point),cosine:B(this.point,t.point,r.point)})};return(t,r)=>{e.has(t)||n(t),e.has(r)||n(r);const{sine:i,cosine:o}=e.get(t),{sine:s,cosine:l}=e.get(r);return i>=0&&s>=0?o<l?1:o>l?-1:0:i<0&&s<0?o<l?-1:o>l?1:0:s<i?-1:s>i?1:0}}}let C=0;class F{static compare(t,e){const n=t.leftSE.point.x,r=e.leftSE.point.x,i=t.rightSE.point.x,o=e.rightSE.point.x;if(o<n)return 1;if(i<r)return-1;const s=t.leftSE.point.y,l=e.leftSE.point.y,h=t.rightSE.point.y,u=e.rightSE.point.y;if(n<r){if(l<s&&l<h)return 1;if(l>s&&l>h)return-1;const n=t.comparePoint(e.leftSE.point);if(n<0)return 1;if(n>0)return-1;const r=e.comparePoint(t.rightSE.point);return 0!==r?r:-1}if(n>r){if(s<l&&s<u)return-1;if(s>l&&s>u)return 1;const n=e.comparePoint(t.leftSE.point);if(0!==n)return n;const r=t.comparePoint(e.rightSE.point);return r<0?1:r>0?-1:1}if(s<l)return-1;if(s>l)return 1;if(i<o){const n=e.comparePoint(t.rightSE.point);if(0!==n)return n}if(i>o){const n=t.comparePoint(e.rightSE.point);if(n<0)return 1;if(n>0)return-1}if(i!==o){const t=h-s,e=i-n,f=u-l,c=o-r;if(t>e&&f<c)return 1;if(t<e&&f>c)return-1}return i>o?1:i<o||h<u?-1:h>u?1:t.id<e.id?-1:t.id>e.id?1:0}constructor(t,e,n,r){this.id=++C,this.leftSE=t,t.segment=this,t.otherSE=e,this.rightSE=e,e.segment=this,e.otherSE=t,this.rings=n,this.windings=r}static fromRing(t,e,n){let r,i,o;const s=q.comparePoints(t,e);if(s<0)r=t,i=e,o=1;else{if(!(s>0))throw new Error(`Tried to create degenerate segment at [${t.x}, ${t.y}]`);r=e,i=t,o=-1}const l=new q(r,!0),h=new q(i,!1);return new F(l,h,[n],[o])}replaceRightSE(t){this.rightSE=t,this.rightSE.segment=this,this.rightSE.otherSE=this.leftSE,this.leftSE.otherSE=this.rightSE}bbox(){const t=this.leftSE.point.y,e=this.rightSE.point.y;return{ll:{x:this.leftSE.point.x,y:t<e?t:e},ur:{x:this.rightSE.point.x,y:t>e?t:e}}}vector(){return{x:this.rightSE.point.x-this.leftSE.point.x,y:this.rightSE.point.y-this.leftSE.point.y}}isAnEndpoint(t){return t.x===this.leftSE.point.x&&t.y===this.leftSE.point.y||t.x===this.rightSE.point.x&&t.y===this.rightSE.point.y}comparePoint(t){if(this.isAnEndpoint(t))return 0;const e=this.leftSE.point,n=this.rightSE.point,r=this.vector();if(e.x===n.x)return t.x===e.x?0:t.x<e.x?1:-1;const i=(t.y-e.y)/r.y,o=e.x+i*r.x;if(t.x===o)return 0;const s=(t.x-e.x)/r.x,l=e.y+s*r.y;return t.y===l?0:t.y<l?-1:1}getIntersection(t){const e=this.bbox(),n=t.bbox(),r=p(e,n);if(null===r)return null;const i=this.leftSE.point,o=this.rightSE.point,s=t.leftSE.point,l=t.rightSE.point,h=c(e,s)&&0===this.comparePoint(s),u=c(n,i)&&0===t.comparePoint(i),f=c(e,l)&&0===this.comparePoint(l),g=c(n,o)&&0===t.comparePoint(o);if(u&&h)return g&&!f?o:!g&&f?l:null;if(u)return f&&i.x===l.x&&i.y===l.y?null:i;if(h)return g&&o.x===s.x&&o.y===s.y?null:s;if(g&&f)return null;if(g)return o;if(f)return l;const a=((t,e,n,r)=>{if(0===e.x)return T(n,r,t.x);if(0===r.x)return T(t,e,n.x);if(0===e.y)return G(n,r,t.y);if(0===r.y)return G(t,e,n.y);const i=O(e,r);if(0==i)return null;const o={x:n.x-t.x,y:n.y-t.y},s=O(o,e)/i,l=O(o,r)/i;return{x:(t.x+l*e.x+(n.x+s*r.x))/2,y:(t.y+l*e.y+(n.y+s*r.y))/2}})(i,this.vector(),s,t.vector());return null===a?null:c(r,a)?b.round(a.x,a.y):null}split(t){const e=[],n=void 0!==t.events,r=new q(t,!0),i=new q(t,!1),o=this.rightSE;this.replaceRightSE(i),e.push(i),e.push(r);const s=new F(r,o,this.rings.slice(),this.windings.slice());return q.comparePoints(s.leftSE.point,s.rightSE.point)>0&&s.swapEvents(),q.comparePoints(this.leftSE.point,this.rightSE.point)>0&&this.swapEvents(),n&&(r.checkForConsuming(),i.checkForConsuming()),e}swapEvents(){const t=this.rightSE;this.rightSE=this.leftSE,this.leftSE=t,this.leftSE.isLeft=!0,this.rightSE.isLeft=!1;for(let t=0,e=this.windings.length;t<e;t++)this.windings[t]*=-1}consume(t){let e=this,n=t;for(;e.consumedBy;)e=e.consumedBy;for(;n.consumedBy;)n=n.consumedBy;const r=F.compare(e,n);if(0!==r){if(r>0){const t=e;e=n,n=t}if(e.prev===n){const t=e;e=n,n=t}for(let t=0,r=n.rings.length;t<r;t++){const r=n.rings[t],i=n.windings[t],o=e.rings.indexOf(r);-1===o?(e.rings.push(r),e.windings.push(i)):e.windings[o]+=i}n.rings=null,n.windings=null,n.consumedBy=e,n.leftSE.consumedBy=e.leftSE,n.rightSE.consumedBy=e.rightSE}}prevInResult(){return void 0!==this._prevInResult||(this.prev?this.prev.isInResult()?this._prevInResult=this.prev:this._prevInResult=this.prev.prevInResult():this._prevInResult=null),this._prevInResult}beforeState(){if(void 0!==this._beforeState)return this._beforeState;if(this.prev){const t=this.prev.consumedBy||this.prev;this._beforeState=t.afterState()}else this._beforeState={rings:[],windings:[],multiPolys:[]};return this._beforeState}afterState(){if(void 0!==this._afterState)return this._afterState;const t=this.beforeState();this._afterState={rings:t.rings.slice(0),windings:t.windings.slice(0),multiPolys:[]};const e=this._afterState.rings,n=this._afterState.windings,r=this._afterState.multiPolys;for(let t=0,r=this.rings.length;t<r;t++){const r=this.rings[t],i=this.windings[t],o=e.indexOf(r);-1===o?(e.push(r),n.push(i)):n[o]+=i}const i=[],o=[];for(let t=0,r=e.length;t<r;t++){if(0===n[t])continue;const r=e[t],s=r.poly;if(-1===o.indexOf(s))if(r.isExterior)i.push(s);else{-1===o.indexOf(s)&&o.push(s);const t=i.indexOf(r.poly);-1!==t&&i.splice(t,1)}}for(let t=0,e=i.length;t<e;t++){const e=i[t].multiPoly;-1===r.indexOf(e)&&r.push(e)}return this._afterState}isInResult(){if(this.consumedBy)return!1;if(void 0!==this._isInResult)return this._isInResult;const t=this.beforeState().multiPolys,e=this.afterState().multiPolys;switch(H.type){case"union":{const n=0===t.length,r=0===e.length;this._isInResult=n!==r;break}case"intersection":{let n,r;t.length<e.length?(n=t.length,r=e.length):(n=e.length,r=t.length),this._isInResult=r===H.numMultiPolys&&n<r;break}case"xor":{const n=Math.abs(t.length-e.length);this._isInResult=n%2==1;break}case"difference":{const n=t=>1===t.length&&t[0].isSubject;this._isInResult=n(t)!==n(e);break}default:throw new Error(`Unrecognized operation type found ${H.type}`)}return this._isInResult}}class j{constructor(t,e,n){if(!Array.isArray(t)||0===t.length)throw new Error("Input geometry is not a valid Polygon or MultiPolygon");if(this.poly=e,this.isExterior=n,this.segments=[],"number"!=typeof t[0][0]||"number"!=typeof t[0][1])throw new Error("Input geometry is not a valid Polygon or MultiPolygon");const r=b.round(t[0][0],t[0][1]);this.bbox={ll:{x:r.x,y:r.y},ur:{x:r.x,y:r.y}};let i=r;for(let e=1,n=t.length;e<n;e++){if("number"!=typeof t[e][0]||"number"!=typeof t[e][1])throw new Error("Input geometry is not a valid Polygon or MultiPolygon");let n=b.round(t[e][0],t[e][1]);n.x===i.x&&n.y===i.y||(this.segments.push(F.fromRing(i,n,this)),n.x<this.bbox.ll.x&&(this.bbox.ll.x=n.x),n.y<this.bbox.ll.y&&(this.bbox.ll.y=n.y),n.x>this.bbox.ur.x&&(this.bbox.ur.x=n.x),n.y>this.bbox.ur.y&&(this.bbox.ur.y=n.y),i=n)}r.x===i.x&&r.y===i.y||this.segments.push(F.fromRing(i,r,this))}getSweepEvents(){const t=[];for(let e=0,n=this.segments.length;e<n;e++){const n=this.segments[e];t.push(n.leftSE),t.push(n.rightSE)}return t}}class U{constructor(t,e){if(!Array.isArray(t))throw new Error("Input geometry is not a valid Polygon or MultiPolygon");this.exteriorRing=new j(t[0],this,!0),this.bbox={ll:{x:this.exteriorRing.bbox.ll.x,y:this.exteriorRing.bbox.ll.y},ur:{x:this.exteriorRing.bbox.ur.x,y:this.exteriorRing.bbox.ur.y}},this.interiorRings=[];for(let e=1,n=t.length;e<n;e++){const n=new j(t[e],this,!1);n.bbox.ll.x<this.bbox.ll.x&&(this.bbox.ll.x=n.bbox.ll.x),n.bbox.ll.y<this.bbox.ll.y&&(this.bbox.ll.y=n.bbox.ll.y),n.bbox.ur.x>this.bbox.ur.x&&(this.bbox.ur.x=n.bbox.ur.x),n.bbox.ur.y>this.bbox.ur.y&&(this.bbox.ur.y=n.bbox.ur.y),this.interiorRings.push(n)}this.multiPoly=e}getSweepEvents(){const t=this.exteriorRing.getSweepEvents();for(let e=0,n=this.interiorRings.length;e<n;e++){const n=this.interiorRings[e].getSweepEvents();for(let e=0,r=n.length;e<r;e++)t.push(n[e])}return t}}class Y{constructor(t,e){if(!Array.isArray(t))throw new Error("Input geometry is not a valid Polygon or MultiPolygon");try{"number"==typeof t[0][0][0]&&(t=[t])}catch(t){}this.polys=[],this.bbox={ll:{x:Number.POSITIVE_INFINITY,y:Number.POSITIVE_INFINITY},ur:{x:Number.NEGATIVE_INFINITY,y:Number.NEGATIVE_INFINITY}};for(let e=0,n=t.length;e<n;e++){const n=new U(t[e],this);n.bbox.ll.x<this.bbox.ll.x&&(this.bbox.ll.x=n.bbox.ll.x),n.bbox.ll.y<this.bbox.ll.y&&(this.bbox.ll.y=n.bbox.ll.y),n.bbox.ur.x>this.bbox.ur.x&&(this.bbox.ur.x=n.bbox.ur.x),n.bbox.ur.y>this.bbox.ur.y&&(this.bbox.ur.y=n.bbox.ur.y),this.polys.push(n)}this.isSubject=e}getSweepEvents(){const t=[];for(let e=0,n=this.polys.length;e<n;e++){const n=this.polys[e].getSweepEvents();for(let e=0,r=n.length;e<r;e++)t.push(n[e])}return t}}class V{static factory(t){const e=[];for(let n=0,r=t.length;n<r;n++){const r=t[n];if(!r.isInResult()||r.ringOut)continue;let i=null,o=r.leftSE,s=r.rightSE;const l=[o],h=o.point,u=[];for(;i=o,o=s,l.push(o),o.point!==h;)for(;;){const t=o.getAvailableLinkedEvents();if(0===t.length){const t=l[0].point,e=l[l.length-1].point;throw new Error(`Unable to complete output ring starting at [${t.x}, ${t.y}]. Last matching segment found ends at [${e.x}, ${e.y}].`)}if(1===t.length){s=t[0].otherSE;break}let n=null;for(let t=0,e=u.length;t<e;t++)if(u[t].point===o.point){n=t;break}if(null!==n){const t=u.splice(n)[0],r=l.splice(t.index);r.unshift(r[0].otherSE),e.push(new V(r.reverse()));continue}u.push({index:l.length,point:o.point});const r=o.getLeftmostComparator(i);s=t.sort(r)[0].otherSE;break}e.push(new V(l))}return e}constructor(t){this.events=t;for(let e=0,n=t.length;e<n;e++)t[e].segment.ringOut=this;this.poly=null}getGeom(){let t=this.events[0].point;const e=[t];for(let n=1,r=this.events.length-1;n<r;n++){const r=this.events[n].point,i=this.events[n+1].point;0!==$(r,t,i)&&(e.push(r),t=r)}if(1===e.length)return null;const n=e[0],r=e[1];0===$(n,t,r)&&e.shift(),e.push(e[0]);const i=this.isExteriorRing()?1:-1,o=this.isExteriorRing()?0:e.length-1,s=this.isExteriorRing()?e.length:-1,l=[];for(let t=o;t!=s;t+=i)l.push([e[t].x,e[t].y]);return l}isExteriorRing(){if(void 0===this._isExteriorRing){const t=this.enclosingRing();this._isExteriorRing=!t||!t.isExteriorRing()}return this._isExteriorRing}enclosingRing(){return void 0===this._enclosingRing&&(this._enclosingRing=this._calcEnclosingRing()),this._enclosingRing}_calcEnclosingRing(){let t=this.events[0];for(let e=1,n=this.events.length;e<n;e++){const n=this.events[e];q.compare(t,n)>0&&(t=n)}let e=t.segment.prevInResult(),n=e?e.prevInResult():null;for(;;){if(!e)return null;if(!n)return e.ringOut;if(n.ringOut!==e.ringOut)return n.ringOut.enclosingRing()!==e.ringOut?e.ringOut:e.ringOut.enclosingRing();e=n.prevInResult(),n=e?e.prevInResult():null}}}class X{constructor(t){this.exteriorRing=t,t.poly=this,this.interiorRings=[]}addInterior(t){this.interiorRings.push(t),t.poly=this}getGeom(){const t=[this.exteriorRing.getGeom()];if(null===t[0])return null;for(let e=0,n=this.interiorRings.length;e<n;e++){const n=this.interiorRings[e].getGeom();null!==n&&t.push(n)}return t}}class Q{constructor(t){this.rings=t,this.polys=this._composePolys(t)}getGeom(){const t=[];for(let e=0,n=this.polys.length;e<n;e++){const n=this.polys[e].getGeom();null!==n&&t.push(n)}return t}_composePolys(t){const e=[];for(let n=0,r=t.length;n<r;n++){const r=t[n];if(!r.poly)if(r.isExteriorRing())e.push(new X(r));else{const t=r.enclosingRing();t.poly||e.push(new X(t)),t.poly.addInterior(r)}}return e}}class W{constructor(t){let e=arguments.length>1&&void 0!==arguments[1]?arguments[1]:F.compare;this.queue=t,this.tree=new l(e),this.segments=[]}process(t){const e=t.segment,n=[];if(t.consumedBy)return t.isLeft?this.queue.remove(t.otherSE):this.tree.remove(e),n;const r=t.isLeft?this.tree.add(e):this.tree.find(e);if(!r)throw new Error(`Unable to find segment #${e.id} [${e.leftSE.point.x}, ${e.leftSE.point.y}] -> [${e.rightSE.point.x}, ${e.rightSE.point.y}] in SweepLine tree.`);let i,o,s=r,l=r;for(;void 0===i;)s=this.tree.prev(s),null===s?i=null:void 0===s.key.consumedBy&&(i=s.key);for(;void 0===o;)l=this.tree.next(l),null===l?o=null:void 0===l.key.consumedBy&&(o=l.key);if(t.isLeft){let r=null;if(i){const t=i.getIntersection(e);if(null!==t&&(e.isAnEndpoint(t)||(r=t),!i.isAnEndpoint(t))){const e=this._splitSafely(i,t);for(let t=0,r=e.length;t<r;t++)n.push(e[t])}}let s=null;if(o){const t=o.getIntersection(e);if(null!==t&&(e.isAnEndpoint(t)||(s=t),!o.isAnEndpoint(t))){const e=this._splitSafely(o,t);for(let t=0,r=e.length;t<r;t++)n.push(e[t])}}if(null!==r||null!==s){let t=null;if(null===r)t=s;else if(null===s)t=r;else{t=q.comparePoints(r,s)<=0?r:s}this.queue.remove(e.rightSE),n.push(e.rightSE);const i=e.split(t);for(let t=0,e=i.length;t<e;t++)n.push(i[t])}n.length>0?(this.tree.remove(e),n.push(t)):(this.segments.push(e),e.prev=i)}else{if(i&&o){const t=i.getIntersection(o);if(null!==t){if(!i.isAnEndpoint(t)){const e=this._splitSafely(i,t);for(let t=0,r=e.length;t<r;t++)n.push(e[t])}if(!o.isAnEndpoint(t)){const e=this._splitSafely(o,t);for(let t=0,r=e.length;t<r;t++)n.push(e[t])}}}this.tree.remove(e)}return n}_splitSafely(t,e){this.tree.remove(t);const n=t.rightSE;this.queue.remove(n);const r=t.split(e);return r.push(n),void 0===t.consumedBy&&this.tree.add(t),r}}const Z="undefined"!=typeof process&&process.env.POLYGON_CLIPPING_MAX_QUEUE_SIZE||1e6,D="undefined"!=typeof process&&process.env.POLYGON_CLIPPING_MAX_SWEEPLINE_SEGMENTS||1e6;const H=new class{run(t,e,n){H.type=t,b.reset();const r=[new Y(e,!0)];for(let t=0,e=n.length;t<e;t++)r.push(new Y(n[t],!1));if(H.numMultiPolys=r.length,"difference"===H.type){const t=r[0];let e=1;for(;e<r.length;)null!==p(r[e].bbox,t.bbox)?e++:r.splice(e,1)}if("intersection"===H.type)for(let t=0,e=r.length;t<e;t++){const e=r[t];for(let n=t+1,i=r.length;n<i;n++)if(null===p(e.bbox,r[n].bbox))return[]}const i=new l(q.compare);for(let t=0,e=r.length;t<e;t++){const e=r[t].getSweepEvents();for(let t=0,n=e.length;t<n;t++)if(i.insert(e[t]),i.size>Z)throw new Error("Infinite loop when putting segment endpoints in a priority queue (queue size too big).")}const o=new W(i);let s=i.size,h=i.pop();for(;h;){const t=h.key;if(i.size===s){const e=t.segment;throw new Error(`Unable to pop() ${t.isLeft?"left":"right"} SweepEvent [${t.point.x}, ${t.point.y}] from segment #${e.id} [${e.leftSE.point.x}, ${e.leftSE.point.y}] -> [${e.rightSE.point.x}, ${e.rightSE.point.y}] from queue.`)}if(i.size>Z)throw new Error("Infinite loop when passing sweep line over endpoints (queue size too big).");if(o.segments.length>D)throw new Error("Infinite loop when passing sweep line over endpoints (too many sweep line segments).");const e=o.process(t);for(let t=0,n=e.length;t<n;t++){const n=e[t];void 0===n.consumedBy&&i.insert(n)}s=i.size,h=i.pop()}b.reset();const u=V.factory(o.segments);return new Q(u).getGeom()}};var J={union:function(t){for(var e=arguments.length,n=new Array(e>1?e-1:0),r=1;r<e;r++)n[r-1]=arguments[r];return H.run("union",t,n)},intersection:function(t){for(var e=arguments.length,n=new Array(e>1?e-1:0),r=1;r<e;r++)n[r-1]=arguments[r];return H.run("intersection",t,n)},xor:function(t){for(var e=arguments.length,n=new Array(e>1?e-1:0),r=1;r<e;r++)n[r-1]=arguments[r];return H.run("xor",t,n)},difference:function(t){for(var e=arguments.length,n=new Array(e>1?e-1:0),r=1;r<e;r++)n[r-1]=arguments[r];return H.run("difference",t,n)}};return J}));
+
+
+</script>
+<script>
+(() => {
+const KEY = 'floory.v2', OLDKEY = 'pudorysnik.v1';
+const PC = window.polygonClipping || null;
+const ROOM_COLORS = ['#E9C27A','#A7C4E5','#9CC5A1','#E8A3A0','#C3B1E1','#8FCFCB','#D8D1C4','#F0B98E'];
+const FURN_COLORS = ['#C9CED6','#B08A6A','#E6D6B8','#8FA7B8','#9CC5A1','#E8A3A0','#F3F1EA','#6F7C85'];
+const $ = s => document.querySelector(s);
+const svg = $('#cv'), world = $('#world'), pb = $('#pb'), panel = $('#panel');
+const uid = () => Math.random().toString(36).slice(2, 9);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const r1 = v => Math.round(v * 10) / 10;
+const r2 = v => Math.round(v * 100) / 100;
+const fmtM = cm => (cm / 100).toLocaleString('cs-CZ', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' m';
+const fmtA = cm2 => (cm2 / 10000).toLocaleString('cs-CZ', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' m²';
+const fmtCm = v => String(r1(v)).replace('.', ',');
+const letter = i => String.fromCharCode(65 + i % 26) + (i >= 26 ? Math.floor(i / 26) : '');
+const isWide = () => window.matchMedia('(min-width:860px)').matches;
+function parseLen(str) {
+  let s = String(str).trim().toLowerCase().replace(/\s/g, '').replace(',', '.');
+  let mul = 1;
+  if (s.endsWith('mm')) { mul = .1; s = s.slice(0, -2); }
+  else if (s.endsWith('cm')) { s = s.slice(0, -2); }
+  else if (s.endsWith('m')) { mul = 100; s = s.slice(0, -1); }
+  const v = parseFloat(s);
+  return isFinite(v) ? r1(v * mul) : null;
+}
+
+/* ---------- geometry ---------- */
+const rotP = (p, a) => { const c = Math.cos(a), s = Math.sin(a); return [p[0] * c - p[1] * s, p[0] * s + p[1] * c]; };
+const rad = o => (o.rot || 0) * Math.PI / 180;
+const toW = (o, p) => { const r = rotP(p, rad(o)); return [o.x + r[0], o.y + r[1]]; };
+const toL = (o, p) => rotP([p[0] - o.x, p[1] - o.y], -rad(o));
+const partW = (o, part) => part.pts.map(p => toW(o, p));
+const rectPts = (x, y, w, h) => [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+const norm360 = a => ((a % 360) + 360) % 360;
+function signedArea(r) { let a = 0; for (let i = 0; i < r.length; i++) { const p = r[i], q = r[(i + 1) % r.length]; a += p[0] * q[1] - q[0] * p[1]; } return a / 2; }
+function bboxPts(pts) {
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, y] of pts) { if (x < x0) x0 = x; if (y < y0) y0 = y; if (x > x1) x1 = x; if (y > y1) y1 = y; }
+  return {x: x0, y: y0, w: x1 - x0, h: y1 - y0};
+}
+function inRing(r, x, y) {
+  let c = false;
+  for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+    const [xi, yi] = r[i], [xj, yj] = r[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+  }
+  return c;
+}
+const inMP = (mp, x, y) => mp.some(poly => inRing(poly[0], x, y) && !poly.slice(1).some(h => inRing(h, x, y)));
+function objShape(o) {
+  const polys = o.parts.map(p => partW(o, p)).filter(p => p.length >= 3);
+  let mp = null;
+  if (PC && polys.length > 1) { try { mp = PC.union(...polys.map(p => [p])); } catch (e) { mp = null; } }
+  if (!mp) mp = polys.map(p => [p]);
+  let area = 0;
+  for (const poly of mp) { area += Math.abs(signedArea(poly[0])); for (const h of poly.slice(1)) area -= Math.abs(signedArea(h)); }
+  return {mp, area, bb: bboxPts(polys.flat())};
+}
+const ringD = r => 'M' + r.map(p => r2(p[0]) + ' ' + r2(p[1])).join('L') + 'Z';
+const mpD = mp => mp.map(poly => poly.map(ringD).join('')).join('');
+function outwardN(poly, i) {
+  const a = poly[i], b = poly[(i + 1) % poly.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+  let n = [(b[1] - a[1]) / L, -(b[0] - a[0]) / L];
+  const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+  if (inRing(poly, m[0] + n[0] * .5, m[1] + n[1] * .5)) n = [-n[0], -n[1]];
+  return n;
+}
+function readAngle(deg) { let a = norm360(deg); if (a > 90 && a <= 270) a -= 180; if (a > 270) a -= 360; return a; }
+
+/* ---------- data ---------- */
+function migrateV1(d) {
+  const out = {v: 2, current: d.current, order: d.order, snap: d.snap || 10, rsnap: 15, plans: {}};
+  for (const id of d.order) {
+    const p = d.plans[id], objs = [];
+    const gids = []; for (const pt of p.parts) if (!gids.includes(pt.g)) gids.push(pt.g);
+    for (const g of gids) objs.push({id: g, kind: 'room', name: p.groups[g]?.name || 'Místnost', color: p.groups[g]?.color || ROOM_COLORS[0], x: 0, y: 0, rot: 0,
+      parts: p.parts.filter(q => q.g === g).map(q => ({id: q.id, pts: rectPts(q.x, q.y, q.w, q.h)}))});
+    for (const f of p.furn) {
+      const fw = f.rot % 180 ? f.h : f.w, fh = f.rot % 180 ? f.w : f.h;
+      objs.push({id: f.id, kind: 'furn', name: f.name, color: f.color, x: f.x + fw / 2, y: f.y + fh / 2, rot: f.rot || 0,
+        parts: [{id: uid(), pts: rectPts(-f.w / 2, -f.h / 2, f.w, f.h)}]});
+    }
+    out.plans[id] = {name: p.name, objs, ...(p.sample ? {sample: true} : {})};
+  }
+  return out;
+}
+function sampleData() {
+  const objs = [];
+  const room = (name, color, rects) => objs.push({id: uid(), kind: 'room', name, color, x: 0, y: 0, rot: 0, parts: rects.map(r => ({id: uid(), pts: rectPts(...r)}))});
+  room('Obývák s kuchyní', '#E9C27A', [[0,0,500,420],[500,0,260,300]]);
+  room('Chodba', '#D8D1C4', [[500,300,260,120],[640,420,120,240]]);
+  room('Koupelna', '#8FCFCB', [[760,0,200,260]]);
+  room('WC', '#E8A3A0', [[760,260,120,160]]);
+  room('Ložnice', '#A7C4E5', [[0,420,360,360]]);
+  room('Pokoj', '#C3B1E1', [[360,420,280,360]]);
+  room('Komora', '#9CC5A1', [[640,660,120,120]]);
+  objs[4].parts[0].pts[3] = [-18, 780];           // křivá stěna: dole 378 cm, nahoře 360 cm
+  const f = (name, color, cx, cy, w, h, rot = 0, extra) => objs.push({id: uid(), kind: 'furn', name, color, x: cx, y: cy, rot,
+    parts: [{id: uid(), pts: rectPts(-w / 2, -h / 2, w, h)}, ...(extra ? [{id: uid(), pts: extra}] : [])]});
+  f('Rohový gauč', '#8FA7B8', 150, 77.5, 220, 95, 0, rectPts(-110, 47.5, 95, 90));
+  f('Stolek', '#B08A6A', 215, 220, 100, 60);
+  f('Kuchyňská linka', '#E6D6B8', 630, 30, 260, 60);
+  f('Jídelní stůl', '#B08A6A', 630, 190, 140, 80, 15);
+  f('Postel', '#F3F1EA', 180, 670, 180, 200);
+  f('Skříň', '#C9CED6', 120, 460, 200, 60);
+  f('Psací stůl', '#B08A6A', 560, 470, 120, 60);
+  f('Vana', '#F3F1EA', 907.5, 105, 170, 75, 90);
+  f('Pračka', '#C9CED6', 810, 50, 60, 60);
+  f('WC', '#F3F1EA', 820, 372.5, 40, 65);
+  for (const o of objs) { mergeParts(o); normalize(o); }
+  const id = uid();
+  return {v: 2, current: id, order: [id], snap: 10, rsnap: 15, plans: {[id]: {name: 'Ukázkový byt', sample: true, objs}}};
+}
+function validate(d) {
+  if (!d || typeof d !== 'object' || !d.plans || !Array.isArray(d.order) || !d.order.length) return null;
+  if (d.v !== 2) { try { d = migrateV1(d); } catch (e) { return null; } }
+  for (const id of d.order) { const p = d.plans[id]; if (!p || !Array.isArray(p.objs)) return null; }
+  if (!d.plans[d.current]) d.current = d.order[0];
+  d.snap ||= 10; d.rsnap ||= 15;
+  for (const id of d.order) for (const o of d.plans[id].objs) mergeParts(o);
+  return d;
+}
+function normalize(o) {
+  if (o.kind !== 'furn') return;
+  const b = bboxPts(o.parts.flatMap(p => p.pts)), c = [b.x + b.w / 2, b.y + b.h / 2];
+  if (Math.abs(c[0]) < 1e-6 && Math.abs(c[1]) < 1e-6) return;
+  for (const p of o.parts) p.pts = p.pts.map(q => [r2(q[0] - c[0]), r2(q[1] - c[1])]);
+  const cw = rotP(c, rad(o)); o.x = r2(o.x + cw[0]); o.y = r2(o.y + cw[1]);
+}
+
+function cleanRing(r) {
+  let pts = r.map(p => [r2(p[0]), r2(p[1])]);
+  if (pts.length > 1 && pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1]) pts.pop();
+  let changed = true;
+  while (changed && pts.length > 3) {
+    changed = false;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[(i - 1 + pts.length) % pts.length], b = pts[i], c = pts[(i + 1) % pts.length];
+      const cross = (b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]);
+      if (Math.abs(cross) < .5 || (a[0] === b[0] && a[1] === b[1])) { pts.splice(i, 1); changed = true; break; }
+    }
+  }
+  return pts;
+}
+function mergeParts(o) {
+  if (!PC || o.parts.length < 2) return false;
+  let mp; try { mp = PC.union(...o.parts.map(p => [p.pts])); } catch (e) { return false; }
+  if (!mp || mp.some(poly => poly.length > 1)) return false;
+  if (mp.length >= o.parts.length) return false;
+  o.parts = mp.map(poly => ({id: uid(), pts: cleanRing(poly[0])}));
+  normalize(o); return true;
+}
+
+/* ---------- state ---------- */
+let data = null;
+try { data = validate(JSON.parse(localStorage.getItem(KEY))); } catch (e) {}
+if (!data) try { data = validate(JSON.parse(localStorage.getItem(OLDKEY))); } catch (e) {}
+if (!data) data = sampleData();
+let plan = data.plans[data.current];
+let view = {s: .8, tx: 40, ty: 40};
+let sel = null;           // {o, p, v, e}
+let mode = null;          // 'glue'
+const COARSE = window.matchMedia('(pointer:coarse)').matches;
+const HS = COARSE ? 1.45 : 1;   // handle scale for touch
+let rotSide = 0;          // 0 top,1 right,2 bottom,3 left
+let hoverRot = false;
+let gesture = null;
+let panelOpen = isWide();
+let history = [], future = [], lastCommitted = JSON.stringify(plan);
+
+const objById = id => plan.objs.find(o => o.id === id);
+const selObj = () => sel ? objById(sel.o) : null;
+const selPart = () => { const o = selObj(); return o ? o.parts.find(p => p.id === sel.p) || o.parts[0] : null; };
+const KIND = {room: 'Místnost', furn: 'Nábytek'};
+
+/* ---------- scene ---------- */
+function gridSVG(x0, y0, x1, y1, s) {
+  let out = '';
+  const lv = [];
+  if (10 * s >= 5) lv.push([10, 'g1']);
+  if (50 * s >= 5) lv.push([50, 'g2']);
+  lv.push(100 * s >= 7 ? [100, 'g3'] : [500, 'g3']);
+  for (const [st, cls] of lv) {
+    let d = '';
+    for (let x = Math.floor(x0 / st) * st; x <= x1; x += st) d += `M${x} ${y0}V${y1}`;
+    for (let y = Math.floor(y0 / st) * st; y <= y1; y += st) d += `M${x0} ${y}H${x1}`;
+    out += `<path class="gl ${cls}" d="${d}"/>`;
+  }
+  return out;
+}
+function edgeDims(ring, s, cls, selIdx = -1) {
+  let out = '';
+  const n = ring.length;
+  for (let i = 0; i < n; i++) {
+    const a = ring[i], b = ring[(i + 1) % n], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (L * s < 34 || L < .05) continue;
+    const nn = outwardN(ring, i), off = (cls === 'dima' ? 9 : 19) / s;
+    const mx = (a[0] + b[0]) / 2 + nn[0] * off, my = (a[1] + b[1]) / 2 + nn[1] * off;
+    const ang = readAngle(Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI);
+    out += `<text class="${cls}${i === selIdx ? ' on' : ''}" x="${r2(mx)}" y="${r2(my)}" font-size="${(cls === 'dima' ? 11 : 13) / s}" transform="rotate(${r2(ang)} ${r2(mx)} ${r2(my)})">${fmtCm(L)}</text>`;
+  }
+  return out;
+}
+const alphaSt = o => o.alpha != null ? ` style="fill-opacity:${o.alpha}"` : '';
+function sceneSVG(s, opt = {}) {
+  const sh = new Map(); for (const o of plan.objs) sh.set(o.id, objShape(o));
+  const rooms = plan.objs.filter(o => o.kind === 'room'), furns = plan.objs.filter(o => o.kind === 'furn');
+  let out = '';
+  for (const o of rooms) out += `<path class="rf" fill-rule="evenodd" fill="${esc(o.color)}"${alphaSt(o)} d="${mpD(sh.get(o.id).mp)}"/>`;
+  for (const o of rooms) out += `<path class="ro" d="${mpD(sh.get(o.id).mp)}"/>`;
+  if (data.showDims) for (const o of rooms) if (!(sel && sel.o === o.id)) for (const poly of sh.get(o.id).mp) out += edgeDims(poly[0].slice(0, poly[0].length - (PC && o.parts.length > 1 ? 1 : 0)), s, 'dima');
+  if (!opt.exp) for (const o of rooms) for (const p of o.parts) out += `<path class="hit" data-k="part" data-o="${o.id}" data-p="${p.id}" d="${ringD(partW(o, p))}"/>`;
+  for (const o of furns) {
+    const S = sh.get(o.id);
+    out += `<path class="fu" fill-rule="evenodd" fill="${esc(o.color)}"${alphaSt(o)} d="${mpD(S.mp)}"/>`;
+    const lb = bboxPts(o.parts.flatMap(p => p.pts));
+    let ang = readAngle(o.rot), wPx = lb.w * s, hPx = lb.h * s;
+    const n = Math.max(1, o.name.length);
+    let fs = Math.min(13, (wPx - 6) / (n * .5), hPx * .7);
+    const fsV = Math.min(13, (hPx - 6) / (n * .5), wPx * .7);
+    if (fs < 8 && fsV > fs) { fs = fsV; ang = readAngle(o.rot + 90); }
+    if (fs >= 7 && o.name) out += `<text class="lf" x="${r2(o.x)}" y="${r2(o.y)}" font-size="${fs / s}" transform="rotate(${r2(ang)} ${r2(o.x)} ${r2(o.y)})">${esc(o.name)}</text>`;
+    if (!opt.exp) for (const p of o.parts) out += `<path class="hit" data-k="part" data-o="${o.id}" data-p="${p.id}" d="${ringD(partW(o, p))}"/>`;
+  }
+  // room labels in a free spot
+  const fbs = furns.map(o => sh.get(o.id).bb);
+  for (const o of rooms) {
+    const S = sh.get(o.id), name = o.name || '', bb = S.bb;
+    if (bb.w * s < 34 || bb.h * s < 26) continue;
+    const big = o.parts.map(p => ({p, b: bboxPts(partW(o, p))})).reduce((a, c) => a.b.w * a.b.h >= c.b.w * c.b.h ? a : c).b;
+    const fs = Math.min(18, (big.w * s - 8) / (Math.max(4, name.length) * .48));
+    if (fs < 8) continue;
+    const lw = Math.max(name.length * .48 * fs, 60) / s, lh = fs * 2.1 / s;
+    const bc = [big.x + big.w / 2, big.y + big.h / 2], cands = [];
+    for (let i = 1; i < 10; i++) for (let j = 1; j < 10; j++) cands.push([bb.x + bb.w * i / 10, bb.y + bb.h * j / 10]);
+    cands.sort((a, b) => Math.hypot(a[0] - bc[0], a[1] - bc[1]) - Math.hypot(b[0] - bc[0], b[1] - bc[1]));
+    const ok = c => {
+      const L = c[0] - lw / 2, T = c[1] - lh * .6, R = c[0] + lw / 2, B = c[1] + lh * .4;
+      if (![[L, T], [R, T], [L, B], [R, B], [c[0], T], [c[0], B]].every(q => inMP(S.mp, q[0], q[1]))) return false;
+      return !fbs.some(b => L < b.x + b.w && R > b.x && T < b.y + b.h && B > b.y);
+    };
+    const c = cands.find(ok) || bc;
+    out += `<text class="lb" x="${r2(c[0])}" y="${r2(c[1] - 2 / s)}" font-size="${fs / s}">${esc(name)}</text>`;
+    out += `<text class="la" x="${r2(c[0])}" y="${r2(c[1] + fs * .95 / s)}" font-size="${Math.max(10, fs * .75) / s}">${fmtA(S.area)}</text>`;
+  }
+  if (opt.exp) return out;
+  const o = selObj();
+  if (mode === 'glue' && o) for (const t of plan.objs) if (t.kind === o.kind && t.id !== o.id) out += `<path class="glue-t" d="${mpD(sh.get(t.id).mp)}"/>`;
+  if (o) out += overlaySVG(o, sh.get(o.id), s);
+  return out;
+}
+function rotHandlePos(o, s) {
+  const lb = bboxPts(o.parts.flatMap(p => p.pts)), off = 46 * HS / s;
+  const cx = lb.x + lb.w / 2, cy = lb.y + lb.h / 2;
+  return toW(o, [[cx, lb.y - off], [lb.x + lb.w + off, cy], [cx, lb.y + lb.h + off], [lb.x - off, cy]][rotSide]);
+}
+function sideFor(o, w) {
+  const lb = bboxPts(o.parts.flatMap(p => p.pts)), l = toL(o, w);
+  const dx = (l[0] - (lb.x + lb.w / 2)) / (lb.w / 2 || 1), dy = (l[1] - (lb.y + lb.h / 2)) / (lb.h / 2 || 1);
+  return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0);
+}
+/* furniture ↔ room allocation (by the furniture's centre point) */
+function roomShapes() { return plan.objs.filter(o => o.kind === 'room').map(o => ({o, S: objShape(o)})); }
+function roomOfFurn(f, rs) { let best = null; for (const r of rs) if (inMP(r.S.mp, f.x, f.y) && (!best || r.S.area < best.S.area)) best = r; return best ? best.o : null; }
+function furnIn(room, rs) { return plan.objs.filter(f => f.kind === 'furn' && roomOfFurn(f, rs) === room); }
+/* place furniture near c on growing rings, avoiding other furniture */
+function placeNear(f, c, inside) {
+  const rel = bboxPts(f.parts.flatMap(p => p.pts.map(q => rotP(q, rad(f)))));
+  const others = plan.objs.filter(t => t.kind === 'furn' && t !== f).map(t => objShape(t).bb);
+  const step = Math.max(40, Math.max(rel.w, rel.h) * .75);
+  let best = null, bs = Infinity;
+  for (let k = 0; k <= 7 && bs > 0; k++) {
+    const n = k ? 6 * k : 1;
+    for (let i = 0; i < n; i++) {
+      const a = i / n * Math.PI * 2 - Math.PI / 2, P = [c[0] + Math.cos(a) * k * step, c[1] + Math.sin(a) * k * step];
+      if (!inside(P)) continue;
+      const B = {x: P[0] + rel.x, y: P[1] + rel.y, w: rel.w, h: rel.h};
+      let sc = [[B.x, B.y], [B.x + B.w, B.y], [B.x, B.y + B.h], [B.x + B.w, B.y + B.h]].filter(q => !inside(q)).length;
+      sc += 10 * others.filter(b => B.x < b.x + b.w && B.x + B.w > b.x && B.y < b.y + b.h && B.y + B.h > b.y).length;
+      sc += k * .01;
+      if (sc < bs) { bs = sc; best = P; }
+      if (sc < 1) break;
+    }
+    if (bs < 1) break;
+  }
+  if (best) { f.x = r2(best[0]); f.y = r2(best[1]); }
+}
+function moveFurnToRoom(f, room) {
+  const S = objShape(room), bb = S.bb, c = [bb.x + bb.w / 2, bb.y + bb.h / 2];
+  let best = null, bd = Infinity;
+  for (let i = 1; i < 16; i++) for (let j = 1; j < 16; j++) {
+    const q = [bb.x + bb.w * i / 16, bb.y + bb.h * j / 16];
+    if (!inMP(S.mp, q[0], q[1])) continue;
+    const d = Math.hypot(q[0] - c[0], q[1] - c[1]); if (d < bd) { bd = d; best = q; }
+  }
+  if (best) placeNear(f, best, q => inMP(S.mp, q[0], q[1]));
+}
+function overlaySVG(o, S, s) {
+  const part = selPart(); if (!part) return '';
+  const ring = partW(o, part), n = ring.length;
+  let out = `<path class="selg" d="${mpD(S.mp)}"/>`;
+  if (o.parts.length > 1) out += `<path class="selp" d="${ringD(ring)}"/>`;
+  if (sel.e != null && sel.e < n) { const a = ring[sel.e], b = ring[(sel.e + 1) % n]; out += `<line class="sele" x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`; }
+  out += edgeDims(ring, s, 'dim', sel.e ?? -1);
+  // vertex letters
+  const bb = bboxPts(ring), c = [bb.x + bb.w / 2, bb.y + bb.h / 2];
+  if (bb.w * s > 50 && bb.h * s > 40) ring.forEach((p, i) => {
+    const d = [p[0] - c[0], p[1] - c[1]], L = Math.hypot(...d) || 1, off = 15 / s;
+    out += `<text class="vl" x="${r2(p[0] + d[0] / L * off)}" y="${r2(p[1] + d[1] / L * off)}" font-size="${11 / s}">${letter(i)}</text>`;
+  });
+  // rotation handle
+  if (o.kind === 'furn') {
+    const h = rotHandlePos(o, s);
+    out += `<g class="hrg${hoverRot || gesture?.type === 'rot' ? ' hot' : ''}"><circle class="hr" cx="${h[0]}" cy="${h[1]}" r="${11 * HS / s}"/><text class="hri" x="${h[0]}" y="${h[1]}" font-size="${14 * HS / s}">↻</text></g>`;
+    out += `<circle class="hh" data-k="rot" cx="${h[0]}" cy="${h[1]}" r="${22 * HS / s}"/>`;
+  }
+  // edge handles
+  for (let i = 0; i < n; i++) {
+    const a = ring[i], b = ring[(i + 1) % n];
+    if (Math.hypot(b[0] - a[0], b[1] - a[1]) * s < 44 * HS) continue;
+    const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+    out += `<rect class="he${sel.e === i ? ' on' : ''}" x="${m[0] - 9 * HS / s}" y="${m[1] - 4 * HS / s}" width="${18 * HS / s}" height="${8 * HS / s}" rx="${4 * HS / s}" transform="rotate(${r2(ang)} ${m[0]} ${m[1]})"/>`;
+    out += `<circle class="hh" data-k="edge" data-i="${i}" cx="${m[0]}" cy="${m[1]}" r="${15 * HS / s}"/>`;
+  }
+  // vertex handles
+  ring.forEach((p, i) => {
+    out += `<circle class="hv${sel.v === i ? ' on' : ''}" cx="${p[0]}" cy="${p[1]}" r="${(sel.v === i ? 8 : 6.5) * HS / s}"/>`;
+    out += `<circle class="hh" data-k="vtx" data-i="${i}" cx="${p[0]}" cy="${p[1]}" r="${16 * HS / s}"/>`;
+  });
+  return out;
+}
+function render() {
+  const W = svg.clientWidth, H = svg.clientHeight, s = view.s;
+  const x0 = -view.tx / s, y0 = -view.ty / s, x1 = (W - view.tx) / s, y1 = (H - view.ty) / s;
+  world.setAttribute('transform', `translate(${view.tx} ${view.ty}) scale(${s})`);
+  world.innerHTML = gridSVG(x0, y0, x1, y1, s) + sceneSVG(s);
+  $('#scaleT').textContent = (100 * s >= 7 ? '1 čtverec = 1 m' : '1 čtverec = 5 m') + (10 * s >= 5 ? ' · jemná 10 cm' : '');
+  $('#glueBanner').hidden = mode !== 'glue';
+  if (mode === 'glue') $('#glueT').textContent = selObj()?.kind === 'furn' ? 'Klepni na nábytek, který chceš připojit' : 'Klepni na místnost, kterou chceš připojit';
+  svg.classList.toggle('panning', gesture?.type === 'pan' && gesture.moved);
+}
+function contentBBox() {
+  const pts = plan.objs.flatMap(o => o.parts.flatMap(p => partW(o, p)));
+  return pts.length ? bboxPts(pts) : null;
+}
+function fit() {
+  const W = svg.clientWidth, H = svg.clientHeight, b = contentBBox();
+  if (!W || !H) return;
+  if (!b) { view = {s: .8, tx: W / 2 - 160, ty: H / 2 - 120}; render(); return; }
+  const pad = W < 600 ? 22 : 56, bot = W < 600 ? 56 : 40;
+  const s = Math.max(.08, Math.min(4, Math.min((W - pad * 2) / b.w, (H - pad * 2 - bot) / b.h)));
+  view = {s, tx: (W - b.w * s) / 2 - b.x * s, ty: (H - bot - b.h * s) / 2 - b.y * s};
+  render();
+}
+
+/* ---------- history & saving ---------- */
+function commit() {
+  const s = JSON.stringify(plan);
+  if (s === lastCommitted) return;
+  history.push(lastCommitted); if (history.length > 100) history.shift();
+  future = []; lastCommitted = s;
+  save(); updUndo();
+}
+function resetHistory() { history = []; future = []; lastCommitted = JSON.stringify(plan); updUndo(); }
+function validSel() {
+  if (!sel) return;
+  const o = selObj(); if (!o) { sel = null; return; }
+  const p = o.parts.find(q => q.id === sel.p); if (!p) { sel.p = o.parts[0].id; sel.v = sel.e = null; return; }
+  if (sel.v != null && sel.v >= p.pts.length) sel.v = null;
+  if (sel.e != null && sel.e >= p.pts.length) sel.e = null;
+}
+function restore(s) {
+  data.plans[data.current] = plan = JSON.parse(s); lastCommitted = s;
+  validSel(); mode = null; render(); renderPanel(); save(); updUndo();
+}
+function undo() { if (!history.length) return; future.push(lastCommitted); restore(history.pop()); }
+function redo() { if (!future.length) return; history.push(lastCommitted); restore(future.pop()); }
+function updUndo() { $('#undoB').disabled = !history.length; $('#redoB').disabled = !future.length; }
+
+let docRef = null, saveTimer = null, saving = false, dirty = false, pendingRemote = null;
+const sent = [];
+function setStatus(s) {
+  $('#status').dataset.s = s;
+  $('#statusT').textContent = {local: 'Jen v tomto prohlížeči', saving: 'Ukládám…', saved: 'Uloženo', error: 'Neuloženo – zkusím znovu'}[s];
+}
+function save() {
+  const s = JSON.stringify(data);
+  try { localStorage.setItem(KEY, s); } catch (e) {}
+  if (!docRef) return;
+  dirty = true; setStatus('saving');
+  clearTimeout(saveTimer); saveTimer = setTimeout(flush, 700);
+}
+async function flush() {
+  if (saving || !dirty) return;
+  saving = true; dirty = false;
+  const s = JSON.stringify(data);
+  sent.push(s); if (sent.length > 6) sent.shift();
+  try { await docRef.set({data: s, savedAt: Date.now()}); setStatus(dirty ? 'saving' : 'saved'); }
+  catch (e) { setStatus('error'); dirty = true; }
+  saving = false;
+  if (dirty) saveTimer = setTimeout(flush, 2000);
+}
+function panelBusy() { const a = document.activeElement; return a && pb.contains(a) && (a.tagName === 'INPUT' || a.tagName === 'SELECT'); }
+function applyRemote() {
+  if (!pendingRemote || gesture || panelBusy()) return;
+  let d = null; try { d = validate(JSON.parse(pendingRemote)); } catch (e) {}
+  pendingRemote = null; if (!d) return;
+  data = d; plan = data.plans[data.current];
+  try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
+  validSel(); resetHistory(); fillPlanSel(); render(); renderPanel();
+}
+(async () => {
+  const c = window.claude; if (!c?.use) return;
+  let db = null; try { db = await c.use('db'); } catch (e) {}
+  if (!db) return;
+  docRef = db.doc('store/main');
+  let first = true;
+  docRef.onSnapshot(snap => {
+    if (snap.metadata?.hasPendingWrites) return;
+    if (!snap.exists) { if (first) { first = false; dirty = true; setStatus('saving'); flush(); } return; }
+    first = false;
+    const s = snap.data()?.data;
+    if (typeof s !== 'string') return;
+    if (sent.includes(s) || s === JSON.stringify(data)) { if (!dirty && !saving) setStatus('saved'); return; }
+    pendingRemote = s; applyRemote();
+  }, () => { docRef = null; setStatus('local'); });
+  setStatus('saved');
+})();
+let downloads = null;
+(async () => { try { downloads = await window.claude?.use?.('downloads'); } catch (e) {} if (!sel) renderPanel(); })();
+
+/* ---------- snapping ---------- */
+const snapV = v => Math.round(v / data.snap) * data.snap;
+const snapD = v => Math.round(v / data.snap) * data.snap;
+function vertsOf(objs, skip) {
+  const xs = [], ys = [];
+  for (const o of objs) for (const p of o.parts) p.pts.forEach((q, i) => { if (skip && skip(o, p, i)) return; const w = toW(o, q); xs.push(w[0]); ys.push(w[1]); });
+  return {xs, ys};
+}
+function nearest(cands, vals, thr) {
+  let best = null;
+  for (const e of cands) for (const m of vals) { const d = e - m; if (Math.abs(d) < thr && (best === null || Math.abs(d) < Math.abs(best))) best = d; }
+  return best;
+}
+function magnetPool(o) { return plan.objs.filter(t => o.kind === 'furn' || t.kind === 'room'); }
+function viewCenter() { return [snapV((svg.clientWidth / 2 - view.tx) / view.s), snapV((svg.clientHeight / 2 - 40 - view.ty) / view.s)]; }
+
+/* ---------- actions ---------- */
+function select(o, p, extra = {}) {
+  sel = o ? {o: o.id, p: (p || o.parts[0]).id, v: null, e: null, ...extra} : null;
+  if (mode && !sel) mode = null;
+  if (sel && !isWide()) panelOpen = true;
+  render(); renderPanel();
+}
+function addRoom() {
+  const [cx, cy] = viewCenter(), n = plan.objs.filter(o => o.kind === 'room').length;
+  const o = {id: uid(), kind: 'room', name: 'Místnost ' + (n + 1), color: ROOM_COLORS[n % ROOM_COLORS.length], x: 0, y: 0, rot: 0, parts: [{id: uid(), pts: rectPts(cx - 150, cy - 150, 300, 300)}]};
+  const firstFurn = plan.objs.findIndex(t => t.kind === 'furn');
+  plan.objs.splice(firstFurn < 0 ? plan.objs.length : firstFurn, 0, o);
+  delete plan.sample; commit(); select(o);
+}
+function addFurn() {
+  const [cx, cy] = viewCenter();
+  const o = {id: uid(), kind: 'furn', name: 'Nábytek', color: FURN_COLORS[0], x: cx, y: cy, rot: 0, parts: [{id: uid(), pts: rectPts(-40, -30, 80, 60)}]};
+  const rs = roomShapes(), r = rs.find(q => inMP(q.S.mp, cx, cy));
+  placeNear(o, [cx, cy], r ? q => inMP(r.S.mp, q[0], q[1]) : () => true);
+  plan.objs.push(o); delete plan.sample; commit(); select(o);
+}
+const done = () => { commit(); validSel(); render(); renderPanel(); };
+const A = {
+  addPart() {
+    const o = selObj(), p = selPart(), b = bboxPts(p.pts);
+    const w = o.kind === 'room' ? 200 : 60, h = o.kind === 'room' ? Math.min(200, b.h) : Math.min(60, b.h);
+    const n = {id: uid(), pts: rectPts(b.x + b.w, b.y, w, h)};
+    o.parts.push(n); normalize(o);
+    const merged = mergeParts(o); commit(); select(o, merged ? o.parts[0] : n);
+  },
+  glue() { mode = mode === 'glue' ? null : 'glue'; render(); renderPanel(); },
+  detach() {
+    const o = selObj(), p = selPart(), n = plan.objs.filter(t => t.kind === o.kind).length;
+    o.parts = o.parts.filter(q => q !== p);
+    const no = {id: uid(), kind: o.kind, name: o.name + ' – část', color: (o.kind === 'room' ? ROOM_COLORS : FURN_COLORS)[n % 8], x: o.x, y: o.y, rot: o.rot, parts: [p]};
+    plan.objs.splice(plan.objs.indexOf(o) + 1, 0, no); normalize(o); normalize(no); commit(); select(no, p);
+  },
+  delPart() { const o = selObj(), p = selPart(); o.parts = o.parts.filter(q => q !== p); normalize(o); sel.p = o.parts[0].id; sel.v = sel.e = null; done(); },
+  delObj() { plan.objs = plan.objs.filter(t => t.id !== sel.o); sel = null; mode = null; done(); },
+  dupObj() {
+    const o = selObj(), c = JSON.parse(JSON.stringify(o)), bb = objShape(o).bb;
+    c.id = uid(); c.parts.forEach(p => p.id = uid()); c.name = o.name + (o.kind === 'room' ? ' (kopie)' : '');
+    const dx = o.kind === 'room' ? bb.w + 50 : 20, dy = o.kind === 'room' ? 0 : 20;
+    c.x += dx; c.y += dy;
+    if (o.kind === 'room') for (const f of furnIn(o, roomShapes())) { const fc = JSON.parse(JSON.stringify(f)); fc.id = uid(); fc.parts.forEach(p => p.id = uid()); fc.x += dx; fc.y += dy; plan.objs.push(fc); }
+    plan.objs.splice(plan.objs.indexOf(o) + 1, 0, c); commit(); select(c);
+  },
+  rotBy(v) { const o = selObj(); o.rot = norm360(r2(o.rot + v)); done(); },
+  front() { const o = selObj(); plan.objs = plan.objs.filter(x => x !== o); plan.objs.push(o); done(); },
+  back() { const o = selObj(); plan.objs = plan.objs.filter(x => x !== o); const i = plan.objs.findIndex(t => t.kind === 'furn'); plan.objs.splice(i < 0 ? plan.objs.length : i, 0, o); done(); },
+  addVtx() {
+    const p = selPart(), i = sel.e; if (i == null) return;
+    const a = p.pts[i], b = p.pts[(i + 1) % p.pts.length];
+    p.pts.splice(i + 1, 0, [r2((a[0] + b[0]) / 2), r2((a[1] + b[1]) / 2)]); sel.v = i + 1; sel.e = null; done();
+  },
+  delVtx() { const p = selPart(); if (sel.v == null || p.pts.length <= 3) return; p.pts.splice(sel.v, 1); sel.v = null; normalize(selObj()); done(); },
+  squarePart() { const p = selPart(), b = bboxPts(p.pts); p.pts = rectPts(r2(b.x), r2(b.y), r2(b.w), r2(b.h)); sel.v = sel.e = null; normalize(selObj()); done(); },
+  newPlan() { const id = uid(); data.plans[id] = {name: 'Nový plán ' + (data.order.length + 1), objs: []}; data.order.push(id); switchPlan(id); save(); },
+  dupPlan() { const id = uid(); data.plans[id] = {...JSON.parse(JSON.stringify(plan)), name: plan.name + ' (varianta)'}; delete data.plans[id].sample; data.order.push(id); switchPlan(id); save(); },
+  delPlan() {
+    if (!confirmDel) { confirmDel = true; renderPanel(); return; }
+    confirmDel = false;
+    const id = data.current; delete data.plans[id]; data.order = data.order.filter(x => x !== id);
+    if (!data.order.length) { const n = uid(); data.plans[n] = {name: 'Můj plán', objs: []}; data.order.push(n); }
+    switchPlan(data.order[0]); save();
+  },
+  clearSample() { const id = uid(); data.plans[id] = {name: 'Můj byt', objs: []}; data.order.push(id); switchPlan(id); save(); },
+  exportPng, exportJson,
+  importJson() { fileIn.click(); },
+};
+let confirmDel = false;
+function switchPlan(id) { data.current = id; plan = data.plans[id]; sel = null; mode = null; confirmDel = false; resetHistory(); fillPlanSel(); fit(); renderPanel(); }
+function fillPlanSel() { $('#planSel').innerHTML = data.order.map(id => `<option value="${id}"${id === data.current ? ' selected' : ''}>${esc(data.plans[id].name)}</option>`).join(''); }
+function glueTo(targetId) {
+  const o = selObj(), t = objById(targetId);
+  if (!o || !t || t === o || t.kind !== o.kind) { mode = null; render(); renderPanel(); return; }
+  for (const p of t.parts) o.parts.push({id: p.id, pts: p.pts.map(q => toL(o, toW(t, q)).map(r2))});
+  plan.objs = plan.objs.filter(x => x !== t); normalize(o); mergeParts(o); mode = null;
+  sel.p = o.parts[0].id; sel.v = sel.e = null; done();
+}
+
+/* ---------- export ---------- */
+const standalone = !window.claude;
+const canSave = () => !!downloads || standalone;
+async function saveFile(filename, blobOrStr) {
+  if (downloads) { try { await downloads.save({filename, data: blobOrStr}); } catch (e) {} return; }
+  if (!standalone) return;
+  const blob = blobOrStr instanceof Blob ? blobOrStr : new Blob([blobOrStr], {type: 'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+async function exportPng() {
+  if (!canSave()) return;
+  const b = contentBBox() || {x: 0, y: 0, w: 400, h: 300}, m = 40;
+  const px = Math.min(2.5, 3600 / Math.max(b.w + 2 * m, b.h + 2 * m));
+  const x0 = b.x - m, y0 = b.y - m, w = b.w + 2 * m, h = b.h + 2 * m;
+  const inner = gridSVG(x0, y0, x0 + w, y0 + h, px) + sceneSVG(px, {exp: true});
+  const style = `text{font-family:Carlito,Calibri,Arial,sans-serif}.g1{stroke:rgba(214,112,52,.12)}.g2{stroke:rgba(214,112,52,.22)}.g3{stroke:rgba(214,112,52,.45)}.gl{fill:none;stroke-width:${1 / px}}
+.rf{fill-opacity:.55}.ro{fill:none;stroke:#1F2A30;stroke-width:${2.6 / px}}.fu{fill-opacity:.94;stroke:#1F2A30;stroke-width:${1.2 / px}}
+.lb{font-weight:700;fill:#1F2A30;text-anchor:middle}.la{fill:#5B666C;text-anchor:middle}.lf{fill:#1F2A30;text-anchor:middle;dominant-baseline:central}
+.dima{fill:#5B666C;text-anchor:middle;dominant-baseline:central}`;
+  const str = `<svg xmlns="http://www.w3.org/2000/svg" width="${w * px}" height="${h * px}" viewBox="${x0} ${y0} ${w} ${h}"><style>${style}</style><rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#FAFBF9"/>${inner}</svg>`;
+  const img = new Image();
+  img.onload = () => {
+    const cnv = document.createElement('canvas'); cnv.width = Math.round(w * px); cnv.height = Math.round(h * px);
+    cnv.getContext('2d').drawImage(img, 0, 0);
+    cnv.toBlob(blob => saveFile((plan.name || 'floory') + '.png', blob), 'image/png');
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(str);
+}
+async function exportJson() {
+  if (!canSave()) return;
+  await saveFile((plan.name || 'floory') + '.json', JSON.stringify({floory: 2, plan}, null, 1));
+}
+const fileIn = document.createElement('input'); fileIn.type = 'file'; fileIn.accept = '.json,application/json'; fileIn.hidden = true; document.body.appendChild(fileIn);
+fileIn.addEventListener('change', async () => {
+  const file = fileIn.files[0]; fileIn.value = ''; if (!file) return;
+  try {
+    const j = JSON.parse(await file.text()); let p = j.plan || j;
+    if (!Array.isArray(p.objs)) { const m = validate({v: 1, current: 'x', order: ['x'], plans: {x: p}}); p = m.plans.x; }
+    if (!Array.isArray(p.objs)) throw 0;
+    const id = uid(); data.plans[id] = {name: p.name || 'Importovaný plán', objs: p.objs}; data.order.push(id); switchPlan(id); save();
+  } catch (e) { alertNote = 'Soubor se nepodařilo načíst – musí to být záloha JSON z Floory.'; renderPanel(); }
+});
+let alertNote = '';
+
+/* ---------- panel ---------- */
+function fld(id, label, val, unit = 'cm', hint = '') {
+  return `<label class="fld" for="${id}"><span>${label}${hint ? ` · <small>${hint}</small>` : ''}</span><div class="row"><input id="${id}" inputmode="decimal" autocomplete="off" value="${esc(fmtCm(val))}"><em>${unit}</em></div></label>`;
+}
+function swatches(list, cur) {
+  return `<div class="sws">${list.map(c => `<button class="sw${c.toLowerCase() === (cur || '').toLowerCase() ? ' on' : ''}" data-color="${c}" style="background:${c}" aria-label="Barva ${c}"></button>`).join('')}<input type="color" id="f-col" value="${esc(/^#[0-9a-f]{6}$/i.test(cur) ? cur : '#cccccc')}" title="Vlastní barva" aria-label="Vlastní barva"></div>`;
+}
+function furnRow(t, cls, room) { const b = bboxPts(t.parts.flatMap(p => p.pts)); return `<button class="li${cls}" data-selo="${t.id}"${room ? ` data-droproom="${room.id}"` : ''}><span class="grip" data-grip="${t.id}" title="Přetáhni do jiné místnosti" aria-label="Přesunout">⠿</span><span class="dot" style="background:${esc(t.color)}"></span><span class="nm">${esc(t.name)}</span><span class="ar">${fmtCm(b.w)} × ${fmtCm(b.h)}</span></button>`; }
+function renderPanel() {
+  panel.classList.toggle('closed', !panelOpen);
+  let h = '', title = plan.name || 'Plán';
+  const o = selObj();
+  if (o) {
+    const p = selPart(), S = objShape(o), isF = o.kind === 'furn', np = o.parts.length, pi = o.parts.indexOf(p);
+    const lb = bboxPts(p.pts), wb = S.bb;
+    title = KIND[o.kind] + ' · ' + o.name;
+    h += `<div class="sec"><div class="eb">${KIND[o.kind]}</div>
+      <input class="tin" id="f-name" value="${esc(o.name)}" aria-label="Název">
+      ${swatches(isF ? FURN_COLORS : ROOM_COLORS, o.color)}
+      <label class="fld" for="f-alpha"><span>Krytí barvy · <b id="alphaT">${Math.round((o.alpha ?? (isF ? .94 : .55)) * 100)} %</b></span><input type="range" id="f-alpha" min="5" max="100" step="5" value="${Math.round((o.alpha ?? (isF ? .94 : .55)) * 100)}"></label>
+      <div class="stat">Plocha <b>${fmtA(S.area)}</b>${np > 1 ? ` · ${np} ${np < 5 ? 'oddělené díly' : 'oddělených dílů'}` : ''}</div>`;
+    if (isF) h += `<div class="sub sec"><div class="eb">Otočení</div>
+      <div class="rotrow"><button class="btn sm" data-a="rotBy" data-v="-90">−90°</button><button class="btn sm" data-a="rotBy" data-v="-${data.rsnap}">−${data.rsnap}°</button>
+      <div class="row"><input id="f-rot" inputmode="decimal" value="${fmtCm(o.rot)}" aria-label="Úhel"><em>°</em></div>
+      <button class="btn sm" data-a="rotBy" data-v="${data.rsnap}">+${data.rsnap}°</button><button class="btn sm" data-a="rotBy" data-v="90">+90°</button></div>
+      <input type="range" id="f-rotr" min="0" max="359" step="1" value="${Math.round(o.rot)}" aria-label="Otočení">
+      <div class="note">Nebo chyť kolečko ↻ nad nábytkem a otáčej. Krok ${data.rsnap}° (se Shiftem po 1°).</div></div>`;
+    h += `<div class="br"><button class="btn sm" data-a="addPart">+ Přidat díl</button><button class="btn sm${mode === 'glue' ? ' pri' : ''}" data-a="glue">${mode === 'glue' ? (isF ? 'Vyber nábytek…' : 'Vyber místnost…') : (isF ? 'Slepit s jiným' : 'Slepit s jinou')}</button><button class="btn sm" data-a="dupObj">Duplikovat</button>${isF ? '<button class="btn sm" data-a="front">Navrch</button><button class="btn sm" data-a="back">Dospod</button>' : ''}<button class="btn sm danger" data-a="delObj">Smazat</button></div>
+    </div>`;
+    const rs = roomShapes();
+    if (isF) {
+      const cur = roomOfFurn(o, rs);
+      h += `<div class="sec"><div class="eb">Patří do místnosti</div><select class="sel" id="f-room"><option value="">— mimo místnosti —</option>${rs.map(r => `<option value="${r.o.id}"${r.o === cur ? ' selected' : ''}>${esc(r.o.name)}</option>`).join('')}</select>
+        <div class="note">Stačí nábytek přetáhnout do jiné místnosti na plánu, nebo ho sem vybrat a přesune se tam sám.</div></div>`;
+    } else {
+      const fs = furnIn(o, rs);
+      h += `<div class="sec"><div class="eb">Nábytek v místnosti (${fs.length})</div>${fs.length ? `<div class="list">${fs.map(t => furnRow(t, '')).join('')}</div><div class="note">Když místnost přesuneš, nábytek jede s ní.</div>` : '<div class="note">Zatím nic. Přidej „+ Nábytek“ a přetáhni ho sem.</div>'}</div>`;
+    }
+    const sides = p.pts.map((a, i) => {
+      const b = p.pts[(i + 1) % p.pts.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      return `<label class="side${sel.e === i ? ' on' : ''}" for="f-e${i}"><b>${letter(i)}–${letter((i + 1) % p.pts.length)}</b><div class="row"><input id="f-e${i}" data-edge="${i}" inputmode="decimal" value="${fmtCm(L)}"><em>cm</em></div></label>`;
+    }).join('');
+    h += `<div class="sec"><div class="eb">Tvar${np > 1 ? ` · díl ${pi + 1} z ${np}` : ''}</div>
+      <div class="flds">${fld('f-w', 'Šířka', lb.w, 'cm', fmtM(lb.w))}${fld('f-h', isF ? 'Hloubka' : 'Délka', lb.h, 'cm', fmtM(lb.h))}</div>
+      <div class="eb" style="margin-top:4px">Délky stran</div>
+      <div class="sides">${sides}</div>
+      <div class="note">Změna délky strany posune její koncový roh (u A–B posune B). Na plánu táhni za modré rohy nebo za úchyty uprostřed stran.</div>`;
+    if (sel.v != null) {
+      const wv = toW(o, p.pts[sel.v]);
+      h += `<div class="sub sec"><div class="eb">Roh ${letter(sel.v)}</div><div class="flds">${fld('f-vx', 'X', wv[0])}${fld('f-vy', 'Y', wv[1])}</div>
+        <div class="br">${p.pts.length > 3 ? '<button class="btn sm danger" data-a="delVtx">Smazat roh</button>' : ''}</div></div>`;
+    }
+    if (sel.e != null) h += `<div class="sub sec"><div class="eb">Strana ${letter(sel.e)}–${letter((sel.e + 1) % p.pts.length)}</div><div class="br"><button class="btn sm" data-a="addVtx">+ Přidat roh doprostřed</button></div></div>`;
+    h += `<div class="br"><button class="btn sm" data-a="squarePart">Srovnat na obdélník</button>${np > 1 ? '<button class="btn sm" data-a="detach">Oddělit díl</button><button class="btn sm danger" data-a="delPart">Smazat díl</button>' : ''}</div></div>`;
+    h += `<div class="sec"><div class="eb">Poloha na plánu</div><div class="flds">${fld('f-x', 'Levý okraj X', wb.x)}${fld('f-y', 'Horní okraj Y', wb.y)}</div></div>`;
+  } else {
+    const rooms = plan.objs.filter(t => t.kind === 'room'), furns = plan.objs.filter(t => t.kind === 'furn');
+    let tot = 0;
+    const rs = roomShapes(), alloc = new Map(furns.map(f => [f, roomOfFurn(f, rs)]));
+    const rows = rs.map(({o: t, S}) => { tot += S.area; return `<button class="li" data-selo="${t.id}" data-droproom="${t.id}"><span class="dot" style="background:${esc(t.color)}"></span><span class="nm">${esc(t.name)}</span><span class="ar">${fmtA(S.area)}</span></button>` + furns.filter(f => alloc.get(f) === t).map(f => furnRow(f, ' fi', t)).join(''); }).join('');
+    const loose = furns.filter(f => !alloc.get(f));
+    if (plan.sample) h += `<div class="sample"><div><b>Tohle je ukázka.</b> Ložnice má schválně křivou stěnu (nahoře 360, dole 378 cm) a gauč je slepený do L. Pohraj si, nebo rovnou začni svůj byt.</div><div class="br"><button class="btn sm pri" data-a="clearSample">Začít prázdný plán</button></div></div>`;
+    if (alertNote) { h += `<div class="sample">${esc(alertNote)}</div>`; alertNote = ''; }
+    if (!PC) h += `<div class="note">Knihovnu pro slučování tvarů se nepodařilo načíst, slepené díly se proto kreslí zvlášť a plocha je jen součet.</div>`;
+    h += `<div class="sec"><div class="eb">Název plánu</div><input class="tin" id="f-pname" value="${esc(plan.name)}" aria-label="Název plánu"></div>`;
+    h += `<div class="sec"><div class="eb">Místnosti a nábytek</div>${furns.length && rs.length > 1 ? '<div class="note">Nábytek přesuneš do jiné místnosti tažením za ⠿ na název místnosti.</div>' : ''}${rooms.length ? `<div class="list">${rows}<div class="total"><span>Celkem</span><span>${fmtA(tot)}</span></div></div>` : '<div class="note">Zatím žádné. Přidej první tlačítkem „+ Místnost“.</div>'}</div>`;
+    if (loose.length) h += `<div class="sec"><div class="eb">Nábytek mimo místnosti (${loose.length})</div><div class="list">${loose.map(t => furnRow(t, '')).join('')}</div></div>`;
+    h += `<div class="sec"><div class="eb">Kroky a přichytávání</div><div class="flds">
+      <label class="fld" for="f-snap"><span>Posun a rozměry</span><select class="sel" id="f-snap">${[1, 5, 10, 25, 50, 100].map(v => `<option value="${v}"${v === data.snap ? ' selected' : ''}>po ${v} cm</option>`).join('')}</select></label>
+      <label class="fld" for="f-rsnap"><span>Otáčení</span><select class="sel" id="f-rsnap">${[1, 5, 15, 30, 45, 90].map(v => `<option value="${v}"${v === data.rsnap ? ' selected' : ''}>po ${v}°</option>`).join('')}</select></label></div>
+      <label class="chk"><input type="checkbox" id="f-dims"${data.showDims ? ' checked' : ''}> Ukazovat délky všech stěn</label>
+      <div class="note">Rohy i hrany se při tažení samy přichytí k rohům a stěnám ostatních místností.</div></div>`;
+    h += `<div class="sec"><div class="eb">Plány a varianty</div><div class="br"><button class="btn sm" data-a="newPlan">Nový plán</button><button class="btn sm" data-a="dupPlan">Duplikovat jako variantu</button><button class="btn sm danger" data-a="delPlan">${confirmDel ? 'Opravdu smazat?' : 'Smazat plán'}</button></div></div>`;
+    h += `<div class="sec"><div class="eb">Soubor</div><div class="note">Záloha JSON přenese plán mezi zařízeními nebo do offline verze Floory.</div><div class="br">${canSave() ? '<button class="btn sm" data-a="exportPng">Uložit obrázek PNG</button><button class="btn sm" data-a="exportJson">Záloha JSON</button>' : ''}<button class="btn sm" data-a="importJson">Načíst zálohu</button></div></div>`;
+    h += `<div class="note">Ovládání: táhni prázdnou plochou pro posun, kolečkem nebo dvěma prsty přibližuj. Klepnutím vybereš, tažením přesuneš. U vybraného tvaru táhni za rohy (modré body) nebo za úchyty uprostřed stran. Klávesnice: šipky posunou, Delete smaže, R otočí, Ctrl+Z vrátí.</div>`;
+  }
+  $('#phT').textContent = title;
+  $('#desel').hidden = !sel;
+  pb.innerHTML = h;
+}
+let listDrag = null, suppressClick = false;
+pb.addEventListener('pointerdown', e => {
+  const g = e.target.closest('[data-grip]'); if (!g) return;
+  e.preventDefault();
+  const f = objById(g.dataset.grip); if (!f) return;
+  const ghost = document.createElement('div'); ghost.className = 'ghost'; ghost.textContent = f.name;
+  document.body.appendChild(ghost);
+  listDrag = {f, ghost, x0: e.clientX, y0: e.clientY, moved: false, target: null};
+  moveGhost(e);
+});
+function moveGhost(e) {
+  const d = listDrag; if (!d) return;
+  if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) > 4) d.moved = true;
+  d.ghost.style.transform = `translate(${e.clientX + 12}px, ${e.clientY - 14}px)`;
+  d.ghost.hidden = !d.moved;
+  d.ghost.style.visibility = 'hidden';
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  d.ghost.style.visibility = '';
+  const t = el?.closest?.('[data-droproom]');
+  pb.querySelectorAll('.drop').forEach(x => x.classList.remove('drop'));
+  d.target = null;
+  if (t && d.moved) { d.target = t.dataset.droproom; pb.querySelectorAll(`[data-droproom="${d.target}"]`).forEach(x => x.classList.add('drop')); }
+  const r = pb.getBoundingClientRect();
+  if (e.clientY < r.top + 36) pb.scrollTop -= 10; else if (e.clientY > r.bottom - 36) pb.scrollTop += 10;
+}
+document.addEventListener('pointermove', e => { if (listDrag) { e.preventDefault(); moveGhost(e); } }, {passive: false});
+function endListDrag() {
+  const d = listDrag; if (!d) return;
+  listDrag = null; d.ghost.remove();
+  pb.querySelectorAll('.drop').forEach(x => x.classList.remove('drop'));
+  if (!d.moved) return;
+  suppressClick = true; setTimeout(() => suppressClick = false, 50);
+  const room = d.target && objById(d.target);
+  if (room && room.kind === 'room') { moveFurnToRoom(d.f, room); delete plan.sample; done(); }
+}
+document.addEventListener('pointerup', endListDrag);
+document.addEventListener('pointercancel', endListDrag);
+pb.addEventListener('click', e => {
+  if (suppressClick) { e.preventDefault(); return; }
+  const a = e.target.closest('[data-a]');
+  if (a) { if (a.dataset.a !== 'delPlan') confirmDel = false; A[a.dataset.a](a.dataset.v != null ? +a.dataset.v : undefined); return; }
+  const c = e.target.closest('[data-color]'); if (c) { selObj().color = c.dataset.color; done(); return; }
+  const so = e.target.closest('[data-selo]'); if (so) select(objById(so.dataset.selo));
+});
+pb.addEventListener('focusin', e => {
+  const i = e.target.dataset?.edge; if (i == null || !sel) return;
+  if (sel.e !== +i) { sel.e = +i; sel.v = null; render(); pb.querySelectorAll('.side').forEach((el, k) => el.classList.toggle('on', k === +i)); }
+});
+pb.addEventListener('input', e => {
+  const t = e.target, o = selObj();
+  if (t.id === 'f-name') { o.name = t.value; render(); $('#phT').textContent = KIND[o.kind] + ' · ' + t.value; }
+  if (t.id === 'f-pname') { plan.name = t.value; $('#phT').textContent = t.value; }
+  if (t.id === 'f-col') { o.color = t.value; render(); }
+  if (t.id === 'f-rotr') { o.rot = +t.value; $('#f-rot').value = t.value; render(); }
+  if (t.id === 'f-alpha') { o.alpha = +t.value / 100; $('#alphaT').textContent = t.value + ' %'; render(); }
+});
+pb.addEventListener('change', e => {
+  const t = e.target, id = t.id, o = selObj();
+  if (id === 'f-snap') { data.snap = +t.value; save(); return; }
+  if (id === 'f-rsnap') { data.rsnap = +t.value; save(); return; }
+  if (id === 'f-dims') { data.showDims = t.checked; save(); render(); return; }
+  if (id === 'f-pname') { delete plan.sample; commit(); fillPlanSel(); return; }
+  if (id === 'f-name' || id === 'f-col' || id === 'f-rotr' || id === 'f-alpha') { done(); return; }
+  if (id === 'f-room') { const r = objById(t.value); if (r) moveFurnToRoom(o, r); done(); return; }
+  if (!o) return;
+  const p = selPart();
+  if (id === 'f-rot') { const v = parseFloat(t.value.replace(',', '.')); if (isFinite(v)) o.rot = norm360(r2(v)); done(); return; }
+  const v = parseLen(t.value);
+  if (v === null) { renderPanel(); return; }
+  if (t.dataset.edge != null) {
+    const i = +t.dataset.edge, j = (i + 1) % p.pts.length, a = p.pts[i], b = p.pts[j], L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (v <= 0 || L < 1e-6) { renderPanel(); return; }
+    p.pts[j] = [r2(a[0] + (b[0] - a[0]) / L * v), r2(a[1] + (b[1] - a[1]) / L * v)];
+    sel.e = i; normalize(o); done(); return;
+  }
+  if (id === 'f-w' || id === 'f-h') {
+    if (v < 1) { renderPanel(); return; }
+    const b = bboxPts(p.pts);
+    if (id === 'f-w' && b.w > 0) p.pts = p.pts.map(q => [r2(b.x + (q[0] - b.x) * v / b.w), q[1]]);
+    if (id === 'f-h' && b.h > 0) p.pts = p.pts.map(q => [q[0], r2(b.y + (q[1] - b.y) * v / b.h)]);
+    normalize(o); done(); return;
+  }
+  if (id === 'f-vx' || id === 'f-vy') {
+    const w = toW(o, p.pts[sel.v]); if (id === 'f-vx') w[0] = v; else w[1] = v;
+    p.pts[sel.v] = toL(o, w).map(r2); normalize(o); done(); return;
+  }
+  if (id === 'f-x' || id === 'f-y') {
+    const bb = objShape(o).bb;
+    if (id === 'f-x') o.x = r2(o.x + v - bb.x); else o.y = r2(o.y + v - bb.y);
+    done();
+  }
+});
+pb.addEventListener('focusout', () => setTimeout(applyRemote, 0));
+$('#desel').addEventListener('click', e => { e.stopPropagation(); mode = null; select(null); });
+$('#ph').addEventListener('click', () => { if (isWide()) return; panelOpen = !panelOpen; panel.classList.toggle('closed', !panelOpen); });
+
+/* ---------- pointer ---------- */
+const ptrs = new Map();
+function toWorld(cx, cy) { const r = svg.getBoundingClientRect(); return [(cx - r.left - view.tx) / view.s, (cy - r.top - view.ty) / view.s]; }
+svg.addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+  ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  if (ptrs.size === 2) {
+    if (gesture && gesture.moved && gesture.type !== 'pan') { normalize(gesture.o || {}); commit(); }
+    const [a, b] = [...ptrs.values()];
+    gesture = {type: 'pinch', d0: Math.hypot(a.x - b.x, a.y - b.y) || 1, s0: view.s, wp: toWorld((a.x + b.x) / 2, (a.y + b.y) / 2)};
+    return;
+  }
+  if (ptrs.size > 2) return;
+  const t = e.target.closest?.('[data-k]');
+  const w = toWorld(e.clientX, e.clientY);
+  const base = {sx: e.clientX, sy: e.clientY, start: w, moved: false};
+  const k = t?.dataset.k;
+  if (k === 'vtx' || k === 'edge') {
+    const o = selObj(), p = selPart(), i = +t.dataset.i, n = p.pts.length;
+    if (k === 'vtx') {
+      sel.v = i; sel.e = null;
+      const E = vertsOf(magnetPool(o), (oo, pp, ii) => oo === o && pp === p && ii === i);
+      gesture = {...base, type: 'vtx', o, p, i, orig: [...p.pts[i]], E};
+    } else {
+      sel.e = i; sel.v = null;
+      const j = (i + 1) % n, a = p.pts[i], b = p.pts[j], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      const E = vertsOf(magnetPool(o), (oo, pp, ii) => oo === o && pp === p && (ii === i || ii === j));
+      gesture = {...base, type: 'edge', o, p, i, j, a0: [...a], b0: [...b], nrm: [(b[1] - a[1]) / L, -(b[0] - a[0]) / L], E};
+    }
+    render(); return;
+  }
+  if (k === 'rot') { const o = selObj(); gesture = {...base, type: 'rot', o, r0: o.rot, a0: Math.atan2(w[1] - o.y, w[0] - o.x) * 180 / Math.PI}; render(); return; }
+  if (k === 'part') {
+    const o = objById(t.dataset.o), p = o?.parts.find(q => q.id === t.dataset.p);
+    if (!o) return;
+    if (mode === 'glue') { glueTo(o.id); gesture = null; return; }
+    if (o.kind === 'furn') rotSide = sideFor(o, w);
+    if (!sel || sel.o !== o.id || sel.p !== p.id) select(o, p); else if (o.kind === 'furn') render();
+    const carry = o.kind === 'room' ? furnIn(o, roomShapes()).map(f => ({f, x: f.x, y: f.y})) : [];
+    const skip = new Set([o, ...carry.map(c => c.f)]);
+    const E = vertsOf(magnetPool(o).filter(x => !skip.has(x)));
+    gesture = {...base, type: 'move', o, p, whole: true, ox: o.x, oy: o.y, carry, bb: bboxPts(o.parts.flatMap(q => partW(o, q))), E};
+    return;
+  }
+  gesture = {...base, type: 'pan', tx: view.tx, ty: view.ty};
+});
+svg.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) {
+    const o = selObj();
+    if (e.pointerType === 'mouse' && o?.kind === 'furn') {
+      const w = toWorld(e.clientX, e.clientY), side = sideFor(o, w), old = rotSide, oh = hoverRot;
+      if (side !== rotSide) rotSide = side;
+      const hp = rotHandlePos(o, view.s);
+      hoverRot = Math.hypot(hp[0] - w[0], hp[1] - w[1]) * view.s < 40;
+      if (rotSide !== old || hoverRot !== oh) render();
+    }
+    return;
+  }
+  ptrs.set(e.pointerId, {x: e.clientX, y: e.clientY});
+  const g = gesture; if (!g) return;
+  if (g.type === 'pinch') {
+    if (ptrs.size < 2) return;
+    const [a, b] = [...ptrs.values()], r = svg.getBoundingClientRect();
+    view.s = Math.max(.08, Math.min(8, g.s0 * Math.hypot(a.x - b.x, a.y - b.y) / g.d0));
+    view.tx = (a.x + b.x) / 2 - r.left - g.wp[0] * view.s; view.ty = (a.y + b.y) / 2 - r.top - g.wp[1] * view.s;
+    render(); return;
+  }
+  if (g.type === 'idle') return;
+  if (!g.moved && Math.hypot(e.clientX - g.sx, e.clientY - g.sy) < (COARSE ? 8 : 5)) return;
+  g.moved = true;
+  if (g.type === 'pan') { view.tx = g.tx + e.clientX - g.sx; view.ty = g.ty + e.clientY - g.sy; render(); return; }
+  const w = toWorld(e.clientX, e.clientY), dW = [w[0] - g.start[0], w[1] - g.start[1]], thr = (COARSE ? 14 : 10) / view.s, o = g.o;
+  if (g.type === 'move') {
+    const b = g.bb;
+    const mx = nearest(g.E.xs, [b.x + dW[0], b.x + b.w + dW[0]], thr), my = nearest(g.E.ys, [b.y + dW[1], b.y + b.h + dW[1]], thr);
+    const dx = mx !== null ? dW[0] + mx : snapV(b.x + dW[0]) - b.x, dy = my !== null ? dW[1] + my : snapV(b.y + dW[1]) - b.y;
+    o.x = r2(g.ox + dx); o.y = r2(g.oy + dy);
+    for (const c of g.carry) { c.f.x = r2(c.x + dx); c.f.y = r2(c.y + dy); }
+  } else if (g.type === 'vtx') {
+    const dl = rotP(dW, -rad(o));
+    const P = toW(o, [g.orig[0] + snapD(dl[0]), g.orig[1] + snapD(dl[1])]);
+    const mx = nearest(g.E.xs, [w[0]], thr), my = nearest(g.E.ys, [w[1]], thr);
+    if (mx !== null) P[0] = w[0] + mx;
+    if (my !== null) P[1] = w[1] + my;
+    g.p.pts[g.i] = toL(o, P).map(r2);
+  } else if (g.type === 'edge') {
+    const dl = rotP(dW, -rad(o)), n = g.nrm;
+    const proj = dl[0] * n[0] + dl[1] * n[1];
+    let ps = snapD(proj);
+    const nW = rotP(n, rad(o)), a0W = toW(o, g.a0);
+    if (Math.abs(nW[0]) > .999) { const tgt = a0W[0] + nW[0] * proj, m = nearest(g.E.xs, [tgt], thr); if (m !== null) ps = (tgt + m - a0W[0]) / nW[0]; }
+    else if (Math.abs(nW[1]) > .999) { const tgt = a0W[1] + nW[1] * proj, m = nearest(g.E.ys, [tgt], thr); if (m !== null) ps = (tgt + m - a0W[1]) / nW[1]; }
+    g.p.pts[g.i] = [r2(g.a0[0] + n[0] * ps), r2(g.a0[1] + n[1] * ps)];
+    g.p.pts[g.j] = [r2(g.b0[0] + n[0] * ps), r2(g.b0[1] + n[1] * ps)];
+  } else if (g.type === 'rot') {
+    const ang = Math.atan2(w[1] - o.y, w[0] - o.x) * 180 / Math.PI, st = e.shiftKey ? 1 : data.rsnap;
+    o.rot = norm360(Math.round((g.r0 + ang - g.a0) / st) * st);
+    const fr = $('#f-rot'); if (fr) { fr.value = fmtCm(o.rot); $('#f-rotr').value = Math.round(o.rot); }
+  }
+  render();
+});
+function endPtr(e) {
+  if (!ptrs.has(e.pointerId)) return;
+  ptrs.delete(e.pointerId);
+  const g = gesture;
+  if (g?.type === 'pinch' || g?.type === 'idle') { if (ptrs.size === 0) { gesture = null; applyRemote(); } else gesture = {type: 'idle'}; return; }
+  if (ptrs.size) return;
+  gesture = null;
+  if (g?.type === 'pan' && !g.moved) { if (mode === 'glue') { mode = null; render(); renderPanel(); } else if (sel) select(null); }
+  else if (g && g.moved && g.type !== 'pan') { if (g.type !== 'move' || !g.whole) normalize(g.o); commit(); validSel(); renderPanel(); }
+  else if (g && (g.type === 'vtx' || g.type === 'edge')) renderPanel();
+  render(); applyRemote();
+}
+svg.addEventListener('pointerup', endPtr);
+svg.addEventListener('pointercancel', endPtr);
+svg.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = svg.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  const wp = [(mx - view.tx) / view.s, (my - view.ty) / view.s];
+  view.s = Math.max(.08, Math.min(8, view.s * Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0015))));
+  view.tx = mx - wp[0] * view.s; view.ty = my - wp[1] * view.s; render();
+}, {passive: false});
+
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
+  if (e.key === 'Escape') { mode = null; select(null); return; }
+  const o = selObj(); if (!o) return;
+  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); if (sel.v != null && selPart().pts.length > 3) A.delVtx(); else A.delObj(); return; }
+  if (e.key.toLowerCase() === 'r' && o.kind === 'furn') { A.rotBy(e.shiftKey ? -data.rsnap : data.rsnap); return; }
+  const d = {ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1]}[e.key];
+  if (d) {
+    e.preventDefault();
+    const st = e.shiftKey ? 1 : data.snap, dW = [d[0] * st, d[1] * st], p = selPart();
+    if (sel.v != null) { const w = toW(o, p.pts[sel.v]); p.pts[sel.v] = toL(o, [w[0] + dW[0], w[1] + dW[1]]).map(r2); normalize(o); }
+    else {
+      const carry = o.kind === 'room' ? furnIn(o, roomShapes()) : [];
+      for (const t of [o, ...carry]) { t.x = r2(t.x + dW[0]); t.y = r2(t.y + dW[1]); }
+    }
+    done();
+  }
+});
+
+$('#addRoomB').onclick = addRoom;
+$('#addFurnB').onclick = addFurn;
+$('#fitB').onclick = fit;
+$('#undoB').onclick = undo;
+$('#redoB').onclick = redo;
+$('#glueCancel').onclick = () => { mode = null; render(); renderPanel(); };
+$('#planSel').onchange = e => { switchPlan(e.target.value); save(); };
+
+let fitted = false;
+new ResizeObserver(() => { if (!fitted && svg.clientWidth) { fitted = true; fit(); } else render(); }).observe(svg);
+fillPlanSel(); updUndo(); renderPanel(); render();
+})();
+</script>
+</body></html>
